@@ -50,7 +50,7 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; overflow-x: hidden; }
 
 body {
   font-family: 'Hind', sans-serif;
@@ -59,6 +59,7 @@ body {
   min-height: 100vh;
   font-size: 15px;
   line-height: 1.5;
+  overflow-x: hidden;
 }
 
 /* ═══════════════════════════════════════
@@ -200,12 +201,15 @@ body {
   position: fixed; inset: 0; z-index: 9500;
   background: linear-gradient(160deg, #0C1A2E 0%, #1E3A5F 100%);
   display: flex; align-items: center; justify-content: center;
-  padding: 20px;
+  padding: 16px;
+  box-sizing: border-box;
+  overflow-y: auto;
 }
 .ofr-card {
   background: white; border-radius: 20px; width: 100%; max-width: 420px;
   box-shadow: 0 40px 100px rgba(0,0,0,.5); overflow: hidden;
   animation: ofr-pop .35s cubic-bezier(.34,1.56,.64,1);
+  box-sizing: border-box;
 }
 @keyframes ofr-pop { from { opacity:0; transform:scale(.88) translateY(20px); } to { opacity:1; transform:none; } }
 .ofr-hero {
@@ -1760,7 +1764,7 @@ body.is-admin .admin-only { display: inline-flex; }
   .header { padding: 0 18px; height: 62px; }
   .statusbar { padding: 5px 18px; font-size: 10.5px; gap: 16px; }
   .nav { padding: 0 18px; }
-  .kpi-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+  .kpi-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
   .form-panel { padding: 22px 24px; }
   .sec-title { font-size: 22px; }
 }
@@ -1912,10 +1916,22 @@ body.is-admin .admin-only { display: inline-flex; }
   }
 
   /* ── Officer Login Card ── */
-  .ofr-card { max-width: 100%; border-radius: 14px; }
+  .ofr-card { max-width: 100%; border-radius: 14px; box-sizing: border-box; }
   .ofr-hero { padding: 20px 20px 16px; }
   .ofr-body { padding: 18px 18px 22px; }
   .pin-dot { width: 38px; height: 44px; font-size: 18px; }
+  .pin-row { gap: 6px; }
+  #ofr-overlay { padding: 12px; }
+
+  /* ── Dashboard: prevent KPI grid overflow ── */
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .kpi-value { font-size: 26px; }
+  .kpi { padding: 12px; }
+
+  /* ── Prevent any child from overflowing viewport ── */
+  .main > *, .card, .form-panel, .form-banner { max-width: 100%; box-sizing: border-box; }
+  .sec-head { flex-wrap: wrap; }
+  img, table, pre, code { max-width: 100%; }
 }
 
 /* ═══════════════════════════════════════
@@ -7859,6 +7875,12 @@ function updateOfficerLeaderboard(resetPage) {
   updateSortIndicators('officer');
 
   const maxScore = groups[0] ? officerScore(groups[0]) : 1;
+
+  // Build a visit-rank map so medals (🥇🥈🥉) ALWAYS represent top field-visit officers
+  // regardless of which column the user is currently sorting by
+  const visitRanked = [...groups].sort((a,b) => b.records.length - a.records.length);
+  const visitRankMap = new Map(visitRanked.map((g,i) => [g.canonName, i]));
+
   const mergedCount = groups.filter(g=>g.aliases.length>1).length;
   const noteEl = document.getElementById('lb-officer-note');
   if (noteEl) noteEl.textContent = mergedCount > 0
@@ -7890,11 +7912,12 @@ function updateOfficerLeaderboard(resetPage) {
     const score    = officerScore(g);
     const lastAct  = [...rs].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))[0]?.createdAt;
     const rankNum  = idx+1;
-    const medal    = MEDALS[idx] || `<span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-3)">#${rankNum}</span>`;
+    const visitRank = visitRankMap.get(g.canonName) ?? idx;
+    const medal    = MEDALS[visitRank] || `<span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-3)">#${rankNum}</span>`;
     const barW     = Math.round(score/maxScore*100);
     const aliasNote = g.aliases.length>1
       ? `<div style="font-size:10px;color:var(--text-3);margin-top:2px" title="${g.aliases.join(' / ')}">≈ ${g.aliases.length} name variants</div>` : '';
-    const rowBg  = idx===0?'background:linear-gradient(90deg,#FFF9E6,white)':idx===1?'background:linear-gradient(90deg,#F5F5F5,white)':idx===2?'background:linear-gradient(90deg,#FFF4EE,white)':'';
+    const rowBg  = visitRank===0?'background:linear-gradient(90deg,#FFF9E6,white)':visitRank===1?'background:linear-gradient(90deg,#F5F5F5,white)':visitRank===2?'background:linear-gradient(90deg,#FFF4EE,white)':'';
     const recIds = JSON.stringify(rs.map(r=>r.id));
 
     return `<tr class="lb-row" style="${rowBg};cursor:pointer;transition:background .15s"
@@ -9449,29 +9472,51 @@ function renderPage() {
   const pb = document.getElementById('page-btns');
   const infoEl = document.getElementById('records-info');
   if (infoEl) {
-    const start = (APP.page-1)*APP.PER_PAGE + 1;
-    const end   = Math.min(APP.page*APP.PER_PAGE, APP.filtered.length);
-    infoEl.textContent = APP.filtered.length > 0 ? `Showing ${start}–${end} of ${APP.filtered.length} records` : '0 records';
+    const s2 = (APP.page-1)*APP.PER_PAGE + 1;
+    const e2 = Math.min(APP.page*APP.PER_PAGE, APP.filtered.length);
+    infoEl.textContent = APP.filtered.length > 0 ? `Showing ${s2}–${e2} of ${APP.filtered.length} records` : '0 records';
   }
   if (pb) {
     pb.innerHTML = '';
     if (totalPages <= 1) return;
+
+    // ── Helper: build one page button ──────────────────────────
     const mkBtn = (label, page, active, disabled) => {
       const btn = document.createElement('button');
-      btn.className = 'pg-btn' + (active ? ' on' : '');
+      btn.className = 'pg-btn' + (active ? ' on' : '') + (disabled ? ' disabled' : '');
       btn.textContent = label;
       btn.disabled = disabled;
-      btn.style.cssText = `padding:4px ${label==='«'||label==='»'?'8':'10'}px;border:1px solid ${active?'var(--saffron)':'var(--border)'};border-radius:5px;cursor:${disabled?'default':'pointer'};font-size:11px;background:${active?'var(--saffron)':disabled?'var(--stone)':'white'};color:${active?'white':disabled?'var(--text-3)':'var(--text)'}`;
-      if (!disabled) btn.onclick = () => { APP.page = page; renderRecordsTable(); };
+      btn.style.cssText = `padding:4px ${(label==='«'||label==='»')?'8':'10'}px;border:1px solid ${active?'var(--saffron)':'var(--border)'};border-radius:5px;cursor:${disabled?'default':'pointer'};font-size:11px;background:${active?'var(--saffron)':disabled?'var(--stone)':'white'};color:${active?'white':disabled?'var(--text-3)':'var(--text)'}`;
+      if (!disabled) btn.onclick = () => {
+        APP.page = page;   // ← set page THEN render directly — no filterAndRender() reset
+        renderPage();
+        pb.closest('.pagination-bar')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      };
       return btn;
     };
-    pb.appendChild(mkBtn('«', 1, false, APP.page===1));
+
+    // First / Prev
+    pb.appendChild(mkBtn('«', 1,         false, APP.page === 1));
+    pb.appendChild(mkBtn('‹', APP.page-1, false, APP.page === 1));
+
+    // Numbered window
     const p = APP.page;
     let from = Math.max(1, p-2), to = Math.min(totalPages, p+2);
-    if (from > 1) { const sp = document.createElement('span'); sp.textContent='…'; sp.style.cssText='padding:4px 4px;font-size:11px;color:var(--text-3)'; pb.appendChild(sp); }
-    for (let i=from; i<=to; i++) pb.appendChild(mkBtn(i, i, i===p, false));
-    if (to < totalPages) { const sp = document.createElement('span'); sp.textContent='…'; sp.style.cssText='padding:4px 4px;font-size:11px;color:var(--text-3)'; pb.appendChild(sp); }
-    pb.appendChild(mkBtn('»', totalPages, false, APP.page===totalPages));
+    if (from > 1) {
+      const sp = document.createElement('span');
+      sp.textContent = '…'; sp.style.cssText = 'padding:4px 4px;font-size:11px;color:var(--text-3)';
+      pb.appendChild(sp);
+    }
+    for (let i = from; i <= to; i++) pb.appendChild(mkBtn(i, i, i===p, false));
+    if (to < totalPages) {
+      const sp = document.createElement('span');
+      sp.textContent = '…'; sp.style.cssText = 'padding:4px 4px;font-size:11px;color:var(--text-3)';
+      pb.appendChild(sp);
+    }
+
+    // Next / Last
+    pb.appendChild(mkBtn('›', APP.page+1, false, APP.page === totalPages));
+    pb.appendChild(mkBtn('»', totalPages, false, APP.page === totalPages));
   }
 }
 
