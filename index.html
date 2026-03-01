@@ -4002,22 +4002,31 @@ const APP = {
   PER_PAGE: 10,
 
   save() {
-    // ⚠️  Strip base64 photos before writing to localStorage.
-    // Photos are stored in IndexedDB (PhotoDB) which has no quota limit.
-    // Storing photos in localStorage causes QuotaExceededError on mobile (~5MB limit).
+    // Strip full base64 photos before writing to localStorage — they live in IndexedDB.
+    // BUT keep `thumbs` (tiny 160×120 JPEG ~3–6 KB each) — they enable instant thumbnail
+    // display everywhere without any async IndexedDB load.
     const lean = this.records.map(r => {
       if (!r.photos || !r.photos.length) return r;
       const { photos, ...rest } = r; // eslint-disable-line no-unused-vars
-      return rest;
+      return rest;  // thumbs remain — they are in `rest`
     });
     try {
       localStorage.setItem('mld_v3_records', JSON.stringify(lean));
     } catch(e) {
       if (e.name === 'QuotaExceededError') {
-        // Emergency: drop oldest records until it fits
-        console.warn('[MLD] localStorage quota hit — trimming old records');
-        const trimmed = lean.slice(0, Math.max(1, Math.floor(lean.length * 0.7)));
-        try { localStorage.setItem('mld_v3_records', JSON.stringify(trimmed)); } catch(_) {}
+        // First try: strip thumbs from oldest records to reclaim space
+        console.warn('[MLD] localStorage quota hit — stripping old thumbnails');
+        const trimmed = lean.map((r, i) => {
+          if (i < lean.length - 10) { const { thumbs: _t, ...noThumb } = r; return noThumb; }
+          return r;
+        });
+        try {
+          localStorage.setItem('mld_v3_records', JSON.stringify(trimmed));
+        } catch(_) {
+          // Last resort: drop oldest 30%
+          const fallback = lean.slice(0, Math.max(1, Math.floor(lean.length * 0.7)));
+          try { localStorage.setItem('mld_v3_records', JSON.stringify(fallback)); } catch(__) {}
+        }
       }
     }
     try {
@@ -4056,7 +4065,9 @@ const APP = {
 
 let selPrio = 'medium';
 let selDepts = [];
-let photoFiles = [];
+let photoFiles    = [];
+let photoDataURLs = []; // full-quality compressed — IndexedDB + Firestore
+let photoThumbs   = []; // tiny 160×120 px thumbnails — stored with localStorage record
 let voiceActive = false;
 let voiceRec = null;
 
@@ -4203,45 +4214,38 @@ function toggleChip(el, dept) {
   updateDeptChipHint();
 }
 
-let photoDataURLs = []; // parallel array: stores base64 data URLs
+
 
 /* ─────────────────────────────────────────
-   PHOTO COMPRESSION
-   Mobile camera photos are 3–12 MB raw. We compress them to
-   ≤800×800 px @ JPEG 0.72 quality → typically 60–180 KB each.
-   This prevents Firestore write timeouts, IndexedDB bloat,
-   and makes sync reliable on mobile 4G networks.
+   PHOTO COMPRESSION + THUMBNAIL GENERATION
+   Two outputs per photo:
+   • Thumbnail  120×90 px  JPEG 0.40  → ~3–6 KB  → stored in localStorage with record
+   • Full photo 1280px max JPEG 0.72  → ~80–180 KB → stored in IndexedDB + sent to Firestore
+   Thumbnails are always available instantly everywhere (no IndexedDB async load needed).
 ───────────────────────────────────────── */
-function compressPhoto(file) {
+function _photoToCanvas(file, maxW, maxH, quality) {
   return new Promise(resolve => {
-    const MAX_DIM = 1280;   // max width or height in pixels
-    const QUALITY = 0.72;   // JPEG quality (0–1)
-    const reader  = new FileReader();
+    const reader = new FileReader();
     reader.onload = ev => {
       const img = new Image();
       img.onload = () => {
         let w = img.naturalWidth  || img.width;
         let h = img.naturalHeight || img.height;
-        // Scale down proportionally if too large
-        if (w > MAX_DIM || h > MAX_DIM) {
-          if (w > h) { h = Math.round(h * MAX_DIM / w); w = MAX_DIM; }
-          else       { w = Math.round(w * MAX_DIM / h); h = MAX_DIM; }
-        }
+        const scaleW = w > maxW ? maxW / w : 1;
+        const scaleH = h > maxH ? maxH / h : 1;
+        const scale  = Math.min(scaleW, scaleH);
+        w = Math.round(w * scale);
+        h = Math.round(h * scale);
         const canvas = document.createElement('canvas');
         canvas.width  = w;
         canvas.height = h;
         const ctx = canvas.getContext('2d');
-        // White background handles transparent PNGs
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, w, h);
         ctx.drawImage(img, 0, 0, w, h);
-        const compressed = canvas.toDataURL('image/jpeg', QUALITY);
-        const origKB  = Math.round(file.size / 1024);
-        const compKB  = Math.round((compressed.length * 3) / (4 * 1024));
-        console.log(`[Photo] ${file.name}: ${origKB} KB → ${compKB} KB (${w}×${h})`);
-        resolve(compressed);
+        resolve(canvas.toDataURL('image/jpeg', quality));
       };
-      img.onerror = () => resolve(ev.target.result); // fallback: uncompressed
+      img.onerror = () => resolve(null);
       img.src = ev.target.result;
     };
     reader.onerror = () => resolve(null);
@@ -4249,48 +4253,62 @@ function compressPhoto(file) {
   });
 }
 
+/** Returns { full, thumb } — full is sync-quality, thumb is display-only tiny */
+async function compressPhoto(file) {
+  const [full, thumb] = await Promise.all([
+    _photoToCanvas(file, 1280, 1280, 0.72),  // ~80–180 KB — for Firestore + IndexedDB
+    _photoToCanvas(file, 160,  120,  0.40),  // ~3–6 KB    — for instant thumbnail display
+  ]);
+  const origKB  = Math.round(file.size / 1024);
+  const fullKB  = full  ? Math.round((full.length  * 3) / (4 * 1024)) : 0;
+  const thumbKB = thumb ? Math.round((thumb.length * 3) / (4 * 1024)) : 0;
+  console.log(`[Photo] ${file.name}: ${origKB} KB → full ${fullKB} KB + thumb ${thumbKB} KB`);
+  return { full: full || thumb, thumb: thumb || full };
+}
+
 async function addPhotos(inp) {
   const files = Array.from(inp.files).slice(0, 5 - photoFiles.length);
   if (!files.length) return;
 
-  // Show a brief "compressing" indicator on the photo zone
   const zone = document.querySelector('.photo-zone p');
   const origText = zone ? zone.textContent : '';
-  if (zone) zone.textContent = '⏳ Compressing photos for mobile…';
+  if (zone) zone.textContent = '⏳ Compressing photos…';
 
   for (const f of files) {
     if (photoFiles.length >= 5) break;
+    if (!f.type.startsWith('image/')) { toast(`⚠️ ${f.name} is not an image`, 'warn'); continue; }
 
-    // Validate file is an image
-    if (!f.type.startsWith('image/')) {
-      toast(`⚠️ ${f.name} is not an image`, 'warn');
-      continue;
-    }
+    const { full, thumb } = await compressPhoto(f);
+    if (!full) { toast(`⚠️ Could not read ${f.name}`, 'warn'); continue; }
 
-    // Compress via canvas
-    const dataURL = await compressPhoto(f);
-    if (!dataURL) { toast(`⚠️ Could not read ${f.name}`, 'warn'); continue; }
-
-    // Convert compressed dataURL back to a Blob for Firebase Storage uploads
-    const byteStr = atob(dataURL.split(',')[1]);
+    // Blob for Firebase Storage upload (if ever needed)
+    const byteStr = atob(full.split(',')[1]);
     const arr     = new Uint8Array(byteStr.length);
     for (let i = 0; i < byteStr.length; i++) arr[i] = byteStr.charCodeAt(i);
     const blob = new Blob([arr], { type: 'image/jpeg' });
 
-    photoFiles.push(blob);           // blob used for Firebase Storage upload
-    photoDataURLs.push(dataURL);     // dataURL used for IndexedDB + display
+    photoFiles.push(blob);        // blob (full quality) for storage
+    photoDataURLs.push(full);     // full-quality dataURL → IndexedDB + Firestore
+    photoThumbs.push(thumb);      // tiny thumbnail → stored in localStorage record
 
-    // Show thumbnail immediately
-    const thumb = document.createElement('img');
-    thumb.src       = dataURL;
-    thumb.className = 'photo-thumb';
-    thumb.title     = 'Click to view';
-    thumb.onclick   = () => window.open(dataURL, '_blank');
-    document.getElementById('photo-thumbs').appendChild(thumb);
+    // Show thumbnail immediately in form
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative;display:inline-block;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.15)';
+    const img = document.createElement('img');
+    img.src = thumb;
+    img.style.cssText = 'width:80px;height:60px;object-fit:cover;display:block;cursor:pointer';
+    img.title = 'Click to view full size';
+    img.onclick = () => window.open(full, '_blank');
+    const badge = document.createElement('div');
+    badge.style.cssText = 'position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:white;font-size:9px;text-align:center;padding:2px';
+    badge.textContent = `Photo ${photoFiles.length}`;
+    wrap.appendChild(img);
+    wrap.appendChild(badge);
+    document.getElementById('photo-thumbs').appendChild(wrap);
   }
 
   if (zone) zone.textContent = origText;
-  inp.value = ''; // reset input so same file can be re-selected if needed
+  inp.value = '';
 
   const kb = photoDataURLs.reduce((s, d) => s + Math.round((d.length * 3) / (4 * 1024)), 0);
   toast(`📷 ${photoFiles.length} photo(s) ready — ${kb} KB total`, 'success');
@@ -4412,15 +4430,17 @@ async function submitInspection() {
     followup:     v('f-followup'),
     followupDate: v('f-followup-date'),
     photoCount:   photoFiles.length,
-    photos:       [],   // NOT stored in localStorage — kept in IndexedDB via PhotoDB
+    // thumbs (160×120 JPEG ~3-6KB each) stored in localStorage with record — instant display
+    thumbs:       photoThumbs.length ? [...photoThumbs] : [],
+    photos:       [],   // full-quality — kept in IndexedDB via PhotoDB, not in localStorage
     synced:       false,
     createdAt:    new Date().toISOString(),
-    createdAtISO: new Date().toISOString(),  // plain string for Firestore orderBy
+    createdAtISO: new Date().toISOString(),
     submittedBy:  getSetting('name') || officer
   };
 
   APP.records.unshift(record);
-  // Save photos to IndexedDB (no quota limits) — record in localStorage has only photoCount
+  // Save full-quality photos to IndexedDB (no quota limits)
   if (photoDataURLs.length) {
     PhotoDB.save(record.id, [...photoDataURLs]).catch(() => {});
     record.photos = [...photoDataURLs]; // keep in-memory for immediate display this session
@@ -4597,8 +4617,9 @@ function resetForm() {
   document.getElementById('gps-btn-icon').textContent = '📍';
   document.getElementById('gps-btn-text').textContent = 'Capture Location';
   document.getElementById('gps-accuracy').style.display = 'none';
-  photoFiles = [];
+  photoFiles    = [];
   photoDataURLs = [];
+  photoThumbs   = [];
   selPrio = 'medium';
   document.querySelectorAll('.prio-btn').forEach(b => b.classList.remove('active'));
   document.querySelector('.prio-btn.sel-medium').classList.add('active');
@@ -4811,9 +4832,17 @@ function renderPage() {
             ? `<span title="${r.lat}, ${r.lng}" style="color:var(--jade);font-size:16px;cursor:pointer" onclick="event.stopPropagation();window.open('https://www.openstreetmap.org/?mlat=${r.lat}&mlon=${r.lng}#map=16/${r.lat}/${r.lng}','_blank')">📍</span>`
             : `<span style="color:var(--text-3);font-size:12px">—</span>`}
         </td>
-        <td style="text-align:center">
+        <td style="text-align:center;padding:6px">
           ${(r.photoCount||0) > 0
-            ? `<span style="background:var(--sky-pale);color:var(--sky);font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px;cursor:pointer" onclick="event.stopPropagation();viewRecord('${r.id}')">📷 ${r.photoCount}</span>`
+            ? (() => {
+                const ft = (r.thumbs && r.thumbs[0]) || (r.photos && r.photos[0]) || null;
+                return ft
+                  ? `<div style="display:inline-flex;align-items:center;gap:4px;cursor:pointer" onclick="event.stopPropagation();viewRecord('${r.id}')" title="View ${r.photoCount} photo(s)">
+                      <img src="${ft}" style="width:52px;height:38px;object-fit:cover;border-radius:5px;border:1.5px solid var(--border)" onerror="this.outerHTML='<span style=\'color:var(--sky);font-size:11px\'>📷${r.photoCount}</span>'">
+                      ${r.photoCount>1?`<span style="color:var(--sky);font-size:10px;font-weight:700">+${r.photoCount-1}</span>`:''}
+                    </div>`
+                  : `<span style="background:var(--sky-pale);color:var(--sky);font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px;cursor:pointer" onclick="event.stopPropagation();viewRecord('${r.id}')">📷 ${r.photoCount}</span>`;
+              })()
             : `<span style="color:var(--text-3);font-size:12px">—</span>`}
         </td>
         <td>${r.coordRequired?`<span class="pill pill-coord">🔗 Yes</span>`:`<span style="color:var(--text-3);font-size:12px">No</span>`}</td>
@@ -4849,55 +4878,58 @@ async function viewRecord(id) {
   if (!r) return;
   const admin = isAdmin();
 
-  // Store current record id for photo viewer (avoids inline onclick with base64 issues)
   window._currentViewId = id;
-
   document.getElementById('modal-title').textContent = `📋 ${r.officerName} — ${r.department}`;
 
-  // Load photos: first check in-memory, then IndexedDB (photos stripped from localStorage to save quota)
-  let photos = (r.photos && r.photos.length) ? r.photos : await PhotoDB.load(id);
-  // Cache back into record for this session so lightbox works
-  if (photos.length && (!r.photos || !r.photos.length)) r.photos = photos;
+  // Determine best available photo source:
+  // Priority: in-memory full → IndexedDB full → record thumbs → Firestore embedded thumbs
+  const thumbSources = (r.thumbs && r.thumbs.length) ? r.thumbs
+                     : (r.photos && r.photos.length)  ? r.photos
+                     : [];
 
-  // Build photos HTML safely (no base64 in onclick attr)
-  function buildPhotoHtml(photoArr) {
-    if (photoArr && photoArr.length > 0) {
-      const thumbs = photoArr.map((src, i) => {
-        const thumb = document.createElement('div');
-        thumb.style.cssText = 'position:relative;cursor:pointer;display:inline-block';
-        const img = document.createElement('img');
-        img.src = src;
-        img.style.cssText = 'width:120px;height:90px;object-fit:cover;border-radius:8px;border:2px solid #DDD9D0;transition:.2s;display:block';
-        img.onmouseover = () => { img.style.borderColor = '#E8650A'; img.style.transform = 'scale(1.04)'; };
-        img.onmouseout  = () => { img.style.borderColor = '#DDD9D0'; img.style.transform = 'scale(1)'; };
-        const badge = document.createElement('div');
-        badge.style.cssText = 'position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,.6);color:white;font-size:10px;padding:2px 6px;border-radius:4px;pointer-events:none';
-        badge.textContent = `Photo ${i+1}`;
-        thumb.appendChild(img);
-        thumb.appendChild(badge);
-        thumb.addEventListener('click', () => openPhotoViewerById(id, i));
-        const tmp = document.createElement('div');
-        tmp.appendChild(thumb);
-        return tmp.innerHTML;
-      }).join('');
-      return `<div style="margin-bottom:16px">
-        <label style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-3);font-weight:600">📷 Field Photos (${photoArr.length})</label>
-        <div id="modal-photo-thumbs" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">${thumbs}</div>
-      </div>`;
-    } else if (r.photoCount > 0) {
-      // Photos may be embedded in the Firestore record (r.photos from cloud sync)
-      // or recoverable from IndexedDB if viewed on the same device
-      return `<div style="margin-bottom:16px" id="cloud-photo-zone">
-        <label style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-3);font-weight:600">📷 Field Photos (${r.photoCount})</label>
-        <div style="background:var(--stone);border-radius:8px;padding:14px;margin-top:8px;font-size:13px;color:var(--text-3)" id="cloud-photo-msg">
-          ⏳ Loading photos…
-        </div>
+  // Build photo strip using thumbnails (available instantly from localStorage)
+  function buildPhotoStrip(thumbArr, count) {
+    if (!thumbArr || !thumbArr.length) {
+      if (!count) return '';
+      // No thumbs at all — show placeholder tiles
+      const tiles = Array.from({length: count}, (_, i) =>
+        `<div style="width:100px;height:75px;background:var(--stone);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:2px dashed var(--border);cursor:pointer" id="photo-tile-${i}" onclick="loadFullPhoto('${id}',${i})">
+          <span style="font-size:20px">📷</span>
+          <span style="font-size:9px;color:var(--text-3)">Tap to load</span>
+        </div>`
+      ).join('');
+      return `<div style="margin-bottom:20px">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-3);font-weight:600;margin-bottom:10px">📷 Field Photos (${count}) — tap to view full size</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px">${tiles}</div>
       </div>`;
     }
-    return '';
+
+    const tiles = thumbArr.map((src, i) =>
+      `<div style="position:relative;cursor:pointer;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.15);transition:.18s;flex-shrink:0" 
+            onmouseover="this.style.transform='scale(1.04)';this.style.boxShadow='0 4px 16px rgba(0,0,0,.25)'" 
+            onmouseout="this.style.transform='';this.style.boxShadow='0 2px 8px rgba(0,0,0,.15)'"
+            onclick="loadFullPhoto('${id}',${i})"
+            id="photo-tile-${i}"
+            title="Tap to view full size">
+        <img src="${src}" 
+             style="width:110px;height:82px;object-fit:cover;display:block"
+             onerror="this.closest('div').innerHTML='<div style=\'width:110px;height:82px;background:var(--stone);display:flex;align-items:center;justify-content:center;font-size:24px\'>📷</div>'">
+        <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.65));color:white;font-size:9px;padding:3px 6px;text-align:center">
+          Photo ${i+1}${thumbArr.length > 1 ? ' of '+thumbArr.length : ''}
+        </div>
+        <div style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.55);color:white;border-radius:3px;font-size:9px;padding:1px 4px">🔍</div>
+      </div>`
+    ).join('');
+
+    return `<div style="margin-bottom:20px">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-3);font-weight:600;margin-bottom:10px">
+        📷 Field Photos (${thumbArr.length}) — tap to view full size
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px" id="modal-photo-thumbs">${tiles}</div>
+    </div>`;
   }
 
-  const photosHtml = buildPhotoHtml(photos);
+  const photosHtml = buildPhotoStrip(thumbSources, r.photoCount || 0);
 
   document.getElementById('modal-body').innerHTML = `
     <div class="detail-grid">
@@ -4942,44 +4974,53 @@ async function viewRecord(id) {
     </div>
   `;
 
-  // Re-build photo thumbnails using safe DOM method (handles base64 cleanly)
-  if (r.photos && r.photos.length > 0) {
-    buildPhotoThumbs(r, 'modal-photo-thumbs');
-  } else if (r.photoCount > 0) {
-    // Try IndexedDB first (same device), then check if photos are embedded in record from Firestore
-    PhotoDB.load(r.id).then(idbPhotos => {
-      const photoSrc = idbPhotos.length ? idbPhotos : (r.photos || []);
-      const msgEl = document.getElementById('cloud-photo-msg');
-      const zoneEl = document.getElementById('cloud-photo-zone');
-      if (!zoneEl) return; // modal closed
-      if (photoSrc.length > 0) {
-        // Build thumbnails inline
-        const thumbsWrap = document.createElement('div');
-        thumbsWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;margin-top:10px';
-        photoSrc.forEach((src, i) => {
-          const thumb = document.createElement('div');
-          thumb.style.cssText = 'position:relative;cursor:pointer;border-radius:8px;overflow:hidden';
-          const img = document.createElement('img');
-          img.src = src;
-          img.style.cssText = 'width:120px;height:90px;object-fit:cover;border-radius:8px;border:2px solid #DDD9D0;display:block';
-          img.onclick = () => openPhotoViewer(r.id, i, photoSrc);
-          const badge = document.createElement('div');
-          badge.style.cssText = 'position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,.6);color:white;font-size:10px;padding:2px 6px;border-radius:4px;pointer-events:none';
-          badge.textContent = `Photo ${i+1}`;
-          thumb.appendChild(img); thumb.appendChild(badge);
-          thumbsWrap.appendChild(thumb);
-        });
-        if (msgEl) msgEl.replaceWith(thumbsWrap);
-      } else {
-        if (msgEl) msgEl.textContent = `${r.photoCount} photo(s) — not available on this device`;
-      }
-    }).catch(() => {
-      const msgEl = document.getElementById('cloud-photo-msg');
-      if (msgEl) msgEl.textContent = `${r.photoCount} photo(s) attached`;
-    });
+  document.getElementById('modal-bg').classList.add('open');
+}
+
+/**
+ * Called when user taps a thumbnail tile — loads full-quality photo from IndexedDB
+ * and opens the lightbox viewer. Falls back to thumbnail if IndexedDB has nothing.
+ */
+async function loadFullPhoto(recordId, idx) {
+  const r = APP.records.find(x => x.id === recordId);
+  if (!r) return;
+
+  // Show loading indicator on the tapped tile
+  const tile = document.getElementById(`photo-tile-${idx}`);
+  if (tile) {
+    const orig = tile.innerHTML;
+    tile.innerHTML = `<div style="width:110px;height:82px;display:flex;align-items:center;justify-content:center;background:var(--stone);border-radius:8px"><span style="font-size:18px">⏳</span></div>`;
+    setTimeout(() => { if (tile.innerHTML.includes('⏳') && !tile.innerHTML.includes('img')) tile.innerHTML = orig; }, 5000);
   }
 
-  document.getElementById('modal-bg').classList.add('open');
+  // Load full photos from IndexedDB
+  if (!r.photos || !r.photos.length) {
+    try {
+      const idbPhotos = await PhotoDB.load(recordId);
+      if (idbPhotos.length) {
+        r.photos = idbPhotos; // cache in memory
+
+        // Update all tile images to show actual thumbnails if they were placeholders
+        (r.thumbs && r.thumbs.length ? r.thumbs : idbPhotos).forEach((src, i) => {
+          const t = document.getElementById(`photo-tile-${i}`);
+          if (t && !t.querySelector('img[src^="data"]')) {
+            t.querySelector('img') && (t.querySelector('img').src = src);
+          }
+        });
+      } else if (r.thumbs && r.thumbs[idx]) {
+        // No full photos in IndexedDB — open lightbox with thumbnails
+        r.photos = [...r.thumbs];
+      } else {
+        toast('📷 Full photo not available on this device', 'warn');
+        if (tile) tile.innerHTML = `<div style="width:110px;height:82px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:var(--stone);border-radius:8px;font-size:9px;color:var(--text-3);text-align:center;padding:6px"><span style="font-size:18px">📷</span>Not available</div>`;
+        return;
+      }
+    } catch(e) {
+      if (tile) tile.innerHTML = `<div style="width:110px;height:82px;display:flex;align-items:center;justify-content:center;background:var(--stone);border-radius:8px;font-size:20px">📷</div>`;
+    }
+  }
+
+  openPhotoViewer(recordId, idx);
 }
 
 // Alias that avoids passing base64 through HTML attribute
@@ -7049,7 +7090,8 @@ window.saveGMapsKey   = saveGMapsKey;
 window.testGMapsKey   = testGMapsKey;
 window.setAdminPassword    = setAdminPassword;
 window.changeAdminPassword = changeAdminPassword;
-window.openPhotoViewer = openPhotoViewer;
+window.openPhotoViewer  = openPhotoViewer;
+window.loadFullPhoto    = loadFullPhoto;
 window.openPhotoViewerById = openPhotoViewerById;
 window.pvPrev          = pvPrev;
 window.pvNext          = pvNext;
