@@ -178,13 +178,174 @@ body {
 .chip-net.offline .pulse-dot { animation: none; opacity: .7; }
 
 .officer-chip {
-  background: rgba(255,255,255,.08);
-  border-color: rgba(255,255,255,.15);
-  color: rgba(255,255,255,.8);
+  background: rgba(255,255,255,.1);
+  border-color: rgba(255,255,255,.2);
+  color: rgba(255,255,255,.9);
   cursor: pointer;
   transition: .2s;
+  gap: 7px;
+  padding: 5px 12px;
 }
-.officer-chip:hover { background: rgba(255,255,255,.14); }
+.officer-chip:hover { background: rgba(255,255,255,.18); }
+.oc-avatar {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--saffron), var(--gold));
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800; color: white; flex-shrink: 0;
+  border: 2px solid rgba(255,255,255,.3);
+}
+
+/* ══ Officer Login / Register Overlay ══════════════════════════ */
+#ofr-overlay {
+  position: fixed; inset: 0; z-index: 9500;
+  background: linear-gradient(160deg, #0C1A2E 0%, #1E3A5F 100%);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.ofr-card {
+  background: white; border-radius: 20px; width: 100%; max-width: 420px;
+  box-shadow: 0 40px 100px rgba(0,0,0,.5); overflow: hidden;
+  animation: ofr-pop .35s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes ofr-pop { from { opacity:0; transform:scale(.88) translateY(20px); } to { opacity:1; transform:none; } }
+.ofr-hero {
+  background: linear-gradient(135deg, var(--ink) 0%, var(--ink-soft) 100%);
+  padding: 28px 28px 20px; text-align: center; position: relative; overflow: hidden;
+}
+.ofr-hero::before {
+  content:''; position:absolute; right:-50px; top:-50px;
+  width:200px; height:200px; border-radius:50%;
+  background: radial-gradient(circle, rgba(232,101,10,.25), transparent 70%);
+}
+.ofr-seal {
+  width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 12px;
+  background: linear-gradient(135deg, var(--saffron), var(--gold));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; box-shadow: 0 8px 24px rgba(232,101,10,.4);
+  border: 3px solid rgba(255,255,255,.25);
+}
+.ofr-title { font-family:'Rajdhani',sans-serif; font-size:20px; font-weight:800; color:white; }
+.ofr-sub   { font-size:12px; color:rgba(255,255,255,.55); margin-top:4px; }
+
+.ofr-body  { padding: 24px 28px 28px; }
+.ofr-tabs  { display:flex; border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-bottom:20px; }
+.ofr-tab   { flex:1; padding:10px 6px; border:none; background:var(--stone); color:var(--text-3); font-size:13px; font-weight:600; cursor:pointer; transition:.18s; font-family:'Hind',sans-serif; }
+.ofr-tab.on{ background:var(--ink); color:white; }
+
+.ofr-field { margin-bottom:12px; }
+.ofr-field label { font-size:11px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:.5px; display:block; margin-bottom:5px; }
+.ofr-inp {
+  width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:9px;
+  font-size:14px; font-family:'Hind',sans-serif; outline:none; transition:.2s;
+  background:white; color:var(--text); box-sizing:border-box;
+}
+.ofr-inp:focus { border-color:var(--saffron); box-shadow:0 0 0 3px rgba(232,101,10,.12); }
+.ofr-sel {
+  width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:9px;
+  font-size:14px; font-family:'Hind',sans-serif; outline:none; transition:.2s;
+  background:white; color:var(--text); box-sizing:border-box;
+}
+.ofr-sel:focus { border-color:var(--saffron); }
+
+.ofr-btn {
+  width:100%; padding:13px; background:var(--ink); color:white; border:none;
+  border-radius:10px; font-family:'Rajdhani',sans-serif; font-size:16px; font-weight:700;
+  cursor:pointer; letter-spacing:.5px; transition:.2s; margin-top:4px;
+}
+.ofr-btn:hover { background:var(--saffron); }
+.ofr-btn:active { transform: scale(.98); }
+.ofr-btn.secondary { background:white; color:var(--ink); border:1.5px solid var(--border); margin-top:8px; font-size:14px; }
+.ofr-btn.secondary:hover { border-color:var(--saffron); color:var(--saffron); background:white; }
+
+.ofr-err  { background:#FEF2F2; border:1px solid #FECACA; border-radius:8px; padding:10px 12px; font-size:13px; color:var(--crimson); margin-bottom:12px; display:none; }
+.ofr-err.show { display:block; }
+
+/* ── PIN dots ── */
+.pin-row { display:flex; gap:10px; justify-content:center; margin:8px 0 14px; }
+.pin-dot  { width:42px; height:48px; border:2px solid var(--border); border-radius:9px; font-size:20px; text-align:center; font-family:'JetBrains Mono',monospace; outline:none; transition:.2s; background:white; color:var(--ink); }
+.pin-dot:focus { border-color:var(--saffron); box-shadow:0 0 0 3px rgba(232,101,10,.12); }
+
+/* ══ My Profile page ════════════════════════════════════════════ */
+.profile-hero {
+  background: linear-gradient(135deg, var(--ink) 0%, var(--ink-soft) 100%);
+  border-radius: var(--r-lg); margin-bottom: 0;
+  overflow: hidden; position: relative;
+}
+.profile-hero::before {
+  content:''; position:absolute; right:-60px; top:-60px;
+  width:250px; height:250px; border-radius:50%;
+  background: radial-gradient(circle, rgba(232,101,10,.2), transparent 70%);
+  pointer-events:none;
+}
+.ph-top { padding:28px 28px 20px; display:flex; align-items:flex-start; gap:18px; }
+.ph-avatar {
+  width:78px; height:78px; border-radius:50%; flex-shrink:0;
+  background: linear-gradient(135deg, var(--saffron), var(--gold));
+  display:flex; align-items:center; justify-content:center;
+  font-size:30px; font-weight:800; color:white;
+  border:4px solid rgba(255,255,255,.25);
+  box-shadow: 0 8px 20px rgba(0,0,0,.3);
+}
+.ph-info { flex:1; min-width:0; }
+.ph-name { font-family:'Rajdhani',sans-serif; font-size:24px; font-weight:800; color:white; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ph-desig{ font-size:13px; color:rgba(255,255,255,.65); margin-top:3px; }
+.ph-dept { display:inline-flex; align-items:center; gap:5px; margin-top:8px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); border-radius:20px; padding:3px 10px; font-size:11px; color:rgba(255,255,255,.8); }
+.ph-empid{ font-family:'JetBrains Mono',monospace; font-size:11px; color:rgba(255,255,255,.45); margin-top:6px; }
+
+.ph-stats {
+  display:flex; background:rgba(255,255,255,.06); border-top:1px solid rgba(255,255,255,.1);
+}
+.phs-item { flex:1; padding:14px 10px; text-align:center; border-right:1px solid rgba(255,255,255,.08); }
+.phs-item:last-child { border-right:none; }
+.phs-num  { font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:700; color:white; }
+.phs-lbl  { font-size:9px; text-transform:uppercase; letter-spacing:.6px; color:rgba(255,255,255,.45); margin-top:3px; }
+
+/* ── My Dashboard KPI tiles ── */
+.myd-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px; margin-bottom:20px; }
+.myd-kpi  { background:white; border:1px solid var(--border); border-radius:var(--r); padding:16px 14px; position:relative; overflow:hidden; cursor:default; transition:.15s; }
+.myd-kpi:hover { box-shadow:var(--shadow); transform:translateY(-2px); }
+.myd-kpi .mk-icon { font-size:24px; margin-bottom:8px; }
+.myd-kpi .mk-val  { font-family:'JetBrains Mono',monospace; font-size:28px; font-weight:700; color:var(--ink); }
+.myd-kpi .mk-lbl  { font-size:10px; text-transform:uppercase; letter-spacing:.5px; color:var(--text-3); margin-top:3px; }
+.myd-kpi .mk-bg   { position:absolute; right:-8px; bottom:-8px; font-size:56px; opacity:.06; line-height:1; pointer-events:none; }
+.myd-kpi.mk-saffron{ border-top:3px solid var(--saffron); }
+.myd-kpi.mk-jade  { border-top:3px solid var(--jade); }
+.myd-kpi.mk-sky   { border-top:3px solid var(--sky); }
+.myd-kpi.mk-crimson{ border-top:3px solid var(--crimson); }
+.myd-kpi.mk-gold  { border-top:3px solid var(--gold); }
+
+/* ── Activity streak heatmap ── */
+.streak-wrap { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
+.s-cell {
+  aspect-ratio:1; border-radius:3px; background:var(--stone);
+  transition:.15s; cursor:default; position:relative;
+}
+.s-cell.lv1 { background:#BBF7DF; }
+.s-cell.lv2 { background:#5DD9A6; }
+.s-cell.lv3 { background:#1EA870; }
+.s-cell.lv4 { background:var(--jade); }
+.s-cell:hover::after {
+  content:attr(title); position:absolute; bottom:calc(100% + 4px); left:50%;
+  transform:translateX(-50%); background:var(--ink); color:white;
+  font-size:10px; padding:3px 7px; border-radius:5px;
+  white-space:nowrap; z-index:10; pointer-events:none;
+}
+
+/* ── Recent my-records list ── */
+.my-rec-row {
+  display:flex; align-items:center; gap:12px;
+  padding:11px 16px; border-bottom:1px solid var(--border);
+  cursor:pointer; transition:.12s;
+}
+.my-rec-row:last-child { border-bottom:none; }
+.my-rec-row:hover { background:var(--stone); }
+.myr-thumb { width:46px; height:34px; border-radius:5px; object-fit:cover; flex-shrink:0; background:var(--stone); }
+.myr-no-img { width:46px; height:34px; border-radius:5px; background:var(--stone); display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+.myr-body { flex:1; min-width:0; }
+.myr-loc  { font-size:13px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.myr-meta { font-size:11px; color:var(--text-3); margin-top:2px; }
+.myr-prio { flex-shrink:0; }
+
 
 /* ═══════════════════════════════════════
    STATUS BAR
@@ -1597,6 +1758,10 @@ body.is-admin .admin-only { display: inline-flex; }
   .form-panel { padding: 18px; }
   .brand-en { font-size: 14px; }
   .brand-ta { display: none; }
+  .dash-grid-2col { grid-template-columns: 1fr !important; }
+  .ph-top { flex-direction: column; align-items: center; text-align: center; }
+  .ph-dept { justify-content: center; }
+  .myd-grid { grid-template-columns: repeat(2, 1fr); }
 }
 </style>
 </head>
@@ -1857,6 +2022,106 @@ window._drainQueue = function() {
 <!-- ═══════════════════════════════════════
      HEADER
 ═══════════════════════════════════════ -->
+<!-- ════════════════════════════════════════
+     OFFICER LOGIN / REGISTER OVERLAY
+     Shown on first visit or after logout.
+     Officers register with name/dept/PIN,
+     then login with PIN on return visits.
+════════════════════════════════════════ -->
+<div id="ofr-overlay" style="display:none">
+  <div class="ofr-card">
+    <div class="ofr-hero">
+      <div class="ofr-seal">🏛</div>
+      <div class="ofr-title">Field Inspection System</div>
+      <div class="ofr-sub">Mayiladuthurai District · Tamil Nadu Government</div>
+    </div>
+    <div class="ofr-body">
+      <!-- Tabs: Login / Register -->
+      <div class="ofr-tabs">
+        <button class="ofr-tab on" id="ofr-tab-login"    onclick="ofrSwitchTab('login')">🔑 Login</button>
+        <button class="ofr-tab"    id="ofr-tab-register" onclick="ofrSwitchTab('register')">📝 Register</button>
+      </div>
+
+      <div id="ofr-err" class="ofr-err"></div>
+
+      <!-- ── LOGIN PANEL ── -->
+      <div id="ofr-panel-login">
+        <div id="ofr-login-select-wrap">
+          <div class="ofr-field">
+            <label>Select Your Name</label>
+            <select class="ofr-sel" id="ofr-login-name">
+              <option value="">— Choose officer —</option>
+            </select>
+          </div>
+          <div class="ofr-field">
+            <label>Enter Your 4-digit PIN</label>
+            <div class="pin-row">
+              <input class="pin-dot" id="pin0" type="password" inputmode="numeric" maxlength="1" pattern="[0-9]" onkeyup="pinNav(this,event,null,'pin1')">
+              <input class="pin-dot" id="pin1" type="password" inputmode="numeric" maxlength="1" pattern="[0-9]" onkeyup="pinNav(this,event,'pin0','pin2')">
+              <input class="pin-dot" id="pin2" type="password" inputmode="numeric" maxlength="1" pattern="[0-9]" onkeyup="pinNav(this,event,'pin1','pin3')">
+              <input class="pin-dot" id="pin3" type="password" inputmode="numeric" maxlength="1" pattern="[0-9]" onkeyup="pinNav(this,event,'pin2',null)">
+            </div>
+          </div>
+          <button class="ofr-btn" onclick="ofrDoLogin()">Login →</button>
+          <button class="ofr-btn secondary" onclick="ofrSwitchTab('register')">New officer? Register here</button>
+        </div>
+        <div id="ofr-login-empty" style="display:none;text-align:center;padding:20px 0">
+          <div style="font-size:40px;margin-bottom:10px">👤</div>
+          <p style="font-size:13px;color:var(--text-3);margin-bottom:16px">No officers registered yet.<br>Be the first to register!</p>
+          <button class="ofr-btn" onclick="ofrSwitchTab('register')">Register Now →</button>
+        </div>
+      </div>
+
+      <!-- ── REGISTER PANEL ── -->
+      <div id="ofr-panel-register" style="display:none">
+        <div class="ofr-field">
+          <label>Full Name <span style="color:var(--crimson)">*</span></label>
+          <input class="ofr-inp" id="ofr-reg-name" placeholder="e.g. K. Rajendran" autocomplete="off">
+        </div>
+        <div class="ofr-field">
+          <label>Employee ID</label>
+          <input class="ofr-inp" id="ofr-reg-empid" placeholder="Service / Employee number" autocomplete="off">
+        </div>
+        <div class="ofr-field">
+          <label>Designation <span style="color:var(--crimson)">*</span></label>
+          <select class="ofr-sel" id="ofr-reg-desig">
+            <option value="">— Select —</option>
+            <option>Collector</option><option>Deputy Collector</option><option>RDO</option>
+            <option>Tahsildar</option><option>Deputy Tahsildar</option>
+            <option>Block Development Officer</option><option>Field Officer</option>
+            <option>Inspector</option><option>VAO</option><option>Other</option>
+          </select>
+        </div>
+        <div class="ofr-field">
+          <label>Department <span style="color:var(--crimson)">*</span></label>
+          <select class="ofr-sel" id="ofr-reg-dept">
+            <option value="">— Select —</option>
+            <option>Revenue</option><option>PWD (Public Works)</option>
+            <option>Health & Family Welfare</option><option>Agriculture</option>
+            <option>District Collectorate</option><option>Education</option>
+            <option>Municipal Administration</option><option>Police</option>
+            <option>Highways</option><option>Electricity (TANGEDCO)</option>
+            <option>Water Resources</option><option>Social Welfare</option>
+            <option>Fisheries</option><option>Forest</option><option>Other</option>
+          </select>
+        </div>
+        <div class="ofr-field">
+          <label>Choose a 4-digit PIN <span style="color:var(--crimson)">*</span></label>
+          <div class="pin-row">
+            <input class="pin-dot" id="reg-pin0" type="password" inputmode="numeric" maxlength="1" pattern="[0-9]" onkeyup="pinNav(this,event,null,'reg-pin1')">
+            <input class="pin-dot" id="reg-pin1" type="password" inputmode="numeric" maxlength="1" pattern="[0-9]" onkeyup="pinNav(this,event,'reg-pin0','reg-pin2')">
+            <input class="pin-dot" id="reg-pin2" type="password" inputmode="numeric" maxlength="1" pattern="[0-9]" onkeyup="pinNav(this,event,'reg-pin1','reg-pin3')">
+            <input class="pin-dot" id="reg-pin3" type="password" inputmode="numeric" maxlength="1" pattern="[0-9]" onkeyup="pinNav(this,event,'reg-pin2',null)">
+          </div>
+          <div style="font-size:11px;color:var(--text-3);text-align:center;margin-top:-6px">Remember this PIN — you'll use it to login every time</div>
+        </div>
+        <button class="ofr-btn" onclick="ofrDoRegister()">Create Account →</button>
+        <button class="ofr-btn secondary" onclick="ofrSwitchTab('login')">Already registered? Login</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <header class="header">
   <div class="header-brand">
     <div class="gov-seal">🏛</div>
@@ -1877,8 +2142,9 @@ window._drainQueue = function() {
     <div class="chip chip-admin" id="admin-chip" style="display:none" onclick="adminLogout()" title="Click to logout from admin">
       🔐 <span id="admin-chip-label">Admin</span>
     </div>
-    <div class="chip officer-chip" id="officer-header" onclick="window._d('showPage',['settings'])">
-      👤 <span id="officer-name-header">Officer</span>
+    <div class="chip officer-chip" id="officer-header" onclick="window._d('showPage',['my-profile'])" title="My Profile & Dashboard">
+      <span class="oc-avatar" id="oc-avatar-letter">?</span>
+      <span id="officer-name-header">Officer</span>
     </div>
   </div>
 </header>
@@ -1895,6 +2161,7 @@ window._drainQueue = function() {
 <!-- NAV TABS -->
 <nav class="nav">
   <button class="nav-tab active" onclick="window._d('showPage',['dashboard',this])">📊 Dashboard</button>
+  <button class="nav-tab" onclick="window._d('showPage',['my-profile',this])">👤 My Profile</button>
   <button class="nav-tab" onclick="window._d('showPage',['form',this])">📝 New Inspection</button>
   <button class="nav-tab" onclick="window._d('showPage',['records',this])">📋 Records <span class="nav-count" id="rec-badge">0</span></button>
   <button class="nav-tab" onclick="window._d('showPage',['coordination',this])">🔗 Coordination <span class="nav-count" id="coord-badge" style="background:var(--sky)">0</span></button>
@@ -3799,7 +4066,172 @@ service cloud.firestore {
   </div>
 </div>
 
+<!-- ────────────────────────── MY PROFILE ────────────────────────── -->
+<div id="page-my-profile" class="page">
+
+  <!-- Profile Hero Card -->
+  <div class="profile-hero" id="ph-hero">
+    <div class="ph-top">
+      <div class="ph-avatar" id="ph-avatar">?</div>
+      <div class="ph-info">
+        <div class="ph-name"  id="ph-name">Officer</div>
+        <div class="ph-desig" id="ph-desig">—</div>
+        <div class="ph-dept"  id="ph-dept-badge">🏢 Department</div>
+        <div class="ph-empid" id="ph-empid">ID: —</div>
+      </div>
+    </div>
+    <div class="ph-stats">
+      <div class="phs-item"><div class="phs-num" id="ph-total">0</div><div class="phs-lbl">Total</div></div>
+      <div class="phs-item"><div class="phs-num" id="ph-month">0</div><div class="phs-lbl">This Month</div></div>
+      <div class="phs-item"><div class="phs-num" id="ph-synced">0</div><div class="phs-lbl">Synced</div></div>
+      <div class="phs-item"><div class="phs-num" id="ph-streak">0</div><div class="phs-lbl">Day Streak</div></div>
+    </div>
+  </div>
+
+  <!-- My Dashboard KPIs -->
+  <div style="margin-top:20px">
+    <div style="font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:var(--ink);margin-bottom:12px">📊 My Inspection Dashboard</div>
+    <div class="myd-grid" id="myd-grid">
+      <div class="myd-kpi mk-saffron">
+        <div class="mk-icon">📋</div>
+        <div class="mk-val" id="myd-total">0</div>
+        <div class="mk-lbl">Total by Me</div>
+        <div class="mk-bg">📋</div>
+      </div>
+      <div class="myd-kpi mk-jade">
+        <div class="mk-icon">☁️</div>
+        <div class="mk-val" id="myd-synced">0</div>
+        <div class="mk-lbl">Synced</div>
+        <div class="mk-bg">☁️</div>
+      </div>
+      <div class="myd-kpi mk-sky">
+        <div class="mk-icon">📅</div>
+        <div class="mk-val" id="myd-month">0</div>
+        <div class="mk-lbl">This Month</div>
+        <div class="mk-bg">📅</div>
+      </div>
+      <div class="myd-kpi mk-crimson">
+        <div class="mk-icon">🚨</div>
+        <div class="mk-val" id="myd-urgent">0</div>
+        <div class="mk-lbl">Urgent</div>
+        <div class="mk-bg">🚨</div>
+      </div>
+      <div class="myd-kpi mk-gold">
+        <div class="mk-icon">📷</div>
+        <div class="mk-val" id="myd-photos">0</div>
+        <div class="mk-lbl">Photos Taken</div>
+        <div class="mk-bg">📷</div>
+      </div>
+      <div class="myd-kpi mk-jade" style="border-top-color:var(--sky)">
+        <div class="mk-icon">📍</div>
+        <div class="mk-val" id="myd-gps">0</div>
+        <div class="mk-lbl">With GPS</div>
+        <div class="mk-bg">📍</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Activity Heatmap -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-head">
+      <div class="card-title">📆 Activity — Last 28 Days</div>
+      <span id="myd-streak-lbl" style="font-size:12px;color:var(--jade);font-weight:600"></span>
+    </div>
+    <div class="card-body">
+      <div class="streak-wrap" id="myd-streak-grid"></div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:11px;color:var(--text-3)">
+        <span>Less</span>
+        <div style="width:12px;height:12px;border-radius:2px;background:var(--stone)"></div>
+        <div style="width:12px;height:12px;border-radius:2px;background:#BBF7DF"></div>
+        <div style="width:12px;height:12px;border-radius:2px;background:#5DD9A6"></div>
+        <div style="width:12px;height:12px;border-radius:2px;background:var(--jade)"></div>
+        <span>More</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px" class="dash-grid-2col">
+
+    <!-- Priority Breakdown -->
+    <div class="card">
+      <div class="card-head"><div class="card-title">🎯 Priority Breakdown</div></div>
+      <div class="card-body" id="myd-prio-chart" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+
+    <!-- Recent Records -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">🕐 My Recent</div>
+        <button class="btn btn-outline btn-sm" onclick="filterMyRecords()">View All →</button>
+      </div>
+      <div id="myd-recent-list"></div>
+    </div>
+  </div>
+
+  <!-- Edit Profile -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-head"><div class="card-title">✏️ Edit My Profile</div></div>
+    <div class="card-body">
+      <div class="fg-grid-2">
+        <div class="fg">
+          <label>Full Name</label>
+          <input class="inp" id="prf-name"  placeholder="Your full name"  oninput="saveOfficerProfile()">
+        </div>
+        <div class="fg">
+          <label>Employee ID</label>
+          <input class="inp" id="prf-empid" placeholder="Service number"  oninput="saveOfficerProfile()">
+        </div>
+        <div class="fg">
+          <label>Designation</label>
+          <select class="sel" id="prf-desig" onchange="saveOfficerProfile()">
+            <option value="">— Select —</option>
+            <option>Collector</option><option>Deputy Collector</option><option>RDO</option>
+            <option>Tahsildar</option><option>Deputy Tahsildar</option>
+            <option>Block Development Officer</option><option>Field Officer</option>
+            <option>Inspector</option><option>VAO</option><option>Other</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Department</label>
+          <select class="sel" id="prf-dept" onchange="saveOfficerProfile()">
+            <option value="">— Select —</option>
+            <option>Revenue</option><option>PWD (Public Works)</option>
+            <option>Health & Family Welfare</option><option>Agriculture</option>
+            <option>District Collectorate</option><option>Education</option>
+            <option>Municipal Administration</option><option>Police</option>
+            <option>Highways</option><option>Electricity (TANGEDCO)</option>
+            <option>Water Resources</option><option>Social Welfare</option>
+            <option>Fisheries</option><option>Forest</option><option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+        <button class="btn btn-primary" onclick="saveOfficerProfile();toast('✅ Profile updated','success')">💾 Save Changes</button>
+        <button class="btn btn-outline" onclick="showChangePinModal()">🔑 Change PIN</button>
+        <button class="btn btn-danger btn-sm" onclick="officerLogout()" style="margin-left:auto">🚪 Logout</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+<!-- /page-my-profile -->
+
 </div><!-- /main -->
+
+<!-- CHANGE PIN MODAL -->
+<div class="modal-bg" id="change-pin-modal-bg" onclick="if(event.target===this)closeChangePinModal()">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-head">
+      <div class="modal-title">🔑 Change PIN</div>
+      <button class="modal-close" onclick="closeChangePinModal()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:24px">
+      <div class="ofr-field" style="margin-bottom:14px"><label style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Current PIN</label><div class="pin-row"><input class="pin-dot" id="cp-old0" type="password" inputmode="numeric" maxlength="1" onkeyup="pinNav(this,event,null,'cp-old1')"><input class="pin-dot" id="cp-old1" type="password" inputmode="numeric" maxlength="1" onkeyup="pinNav(this,event,'cp-old0','cp-old2')"><input class="pin-dot" id="cp-old2" type="password" inputmode="numeric" maxlength="1" onkeyup="pinNav(this,event,'cp-old1','cp-old3')"><input class="pin-dot" id="cp-old3" type="password" inputmode="numeric" maxlength="1" onkeyup="pinNav(this,event,'cp-old2',null)"></div></div>
+      <div class="ofr-field" style="margin-bottom:14px"><label style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">New PIN</label><div class="pin-row"><input class="pin-dot" id="cp-new0" type="password" inputmode="numeric" maxlength="1" onkeyup="pinNav(this,event,null,'cp-new1')"><input class="pin-dot" id="cp-new1" type="password" inputmode="numeric" maxlength="1" onkeyup="pinNav(this,event,'cp-new0','cp-new2')"><input class="pin-dot" id="cp-new2" type="password" inputmode="numeric" maxlength="1" onkeyup="pinNav(this,event,'cp-new1','cp-new3')"><input class="pin-dot" id="cp-new3" type="password" inputmode="numeric" maxlength="1" onkeyup="pinNav(this,event,'cp-new2',null)"></div></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="doChangePin()">Update PIN</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL -->
 <div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeModal()">
@@ -4076,16 +4508,16 @@ let voiceRec = null;
 ───────────────────────────────────────── */
 window.addEventListener('load', () => {
   APP.load();
-  // Garbage-collect any orphaned IndexedDB photo entries (records that were deleted)
+  // Garbage-collect any orphaned IndexedDB photo entries
   setTimeout(() => {
     const liveIds = new Set(APP.records.map(r => r.id));
     PhotoDB.gc(liveIds).catch(() => {});
   }, 3000);
   loadSettings();
   setDefaultDT();
-  loadCustomDepts();   // restore user-saved departments
-  loadCustomDesigs();  // restore user-saved designations
-  renderDeptChips();   // build full department chip grid
+  loadCustomDepts();
+  loadCustomDesigs();
+  renderDeptChips();
   updateDashboard();
   updateBadges();
   updateNetStatus();
@@ -4093,16 +4525,26 @@ window.addEventListener('load', () => {
   populateDownloadStats();
   populateSingleRecordSelect();
   startClock();
-  // Initialize dashboard mini-map with Leaflet (no API key needed)
   setTimeout(() => { try { renderDashMap(); } catch(e){} }, 500);
 
   window.addEventListener('online', () => { updateNetStatus(); syncNow(); });
   window.addEventListener('offline', updateNetStatus);
 
-  // Update download filter counts on change
   document.getElementById('dl-filter-dept').addEventListener('change', updateDLCount);
   document.getElementById('dl-filter-date').addEventListener('change', updateDLCount);
   updateDLCount();
+
+  // ── Officer Auth: check session on load ──────────────────
+  const activeOfficer = ofrCurrent();
+  if (activeOfficer) {
+    // Existing session: apply profile and go
+    ofrApplyProfile(activeOfficer);
+    _syncOfficerToSettings(activeOfficer);
+    try { renderMyProfilePage(); } catch(e) {}
+  } else {
+    // No session: show login overlay
+    showOfficerOverlay();
+  }
 });
 
 function startClock() {
@@ -4125,19 +4567,21 @@ function showPage(id, btn) {
     btn.classList.add('active');
   } else {
     const tabs = document.querySelectorAll('.nav-tab');
-    const tabMap = { dashboard:0, form:1, records:2, coordination:3, map:4, analytics:5, leaderboard:6, officers:7, download:8, sync:9, settings:10 };
+    // Updated: my-profile is now index 1, form is 2, etc.
+    const tabMap = { dashboard:0, 'my-profile':1, form:2, records:3, coordination:4, map:5, analytics:6, leaderboard:7, officers:8, download:9, sync:10, settings:11 };
     if (tabMap[id] !== undefined) tabs[tabMap[id]]?.classList.add('active');
   }
 
-  if (id === 'records')       renderRecordsTable();
-  if (id === 'analytics')     updateAnalytics();
-  if (id === 'coordination')  renderCoordPage();
-  if (id === 'map')           { initLeafletMapPage(); renderTicketBoard(); }
-  if (id === 'leaderboard')   updateLeaderboard();
-  if (id === 'officers')      renderOfficersPage();
-  if (id === 'download')      { populateDownloadStats(); populateSingleRecordSelect(); updateDLCount(); renderTargetTable(); }
-  if (id === 'sync')          updateSyncCounts();
-  if (id === 'settings')      loadAdminUI();
+  if (id === 'my-profile')   { try { renderMyProfilePage(); } catch(e){} }
+  if (id === 'records')      renderRecordsTable();
+  if (id === 'analytics')    updateAnalytics();
+  if (id === 'coordination') renderCoordPage();
+  if (id === 'map')          { initLeafletMapPage(); renderTicketBoard(); }
+  if (id === 'leaderboard')  updateLeaderboard();
+  if (id === 'officers')     renderOfficersPage();
+  if (id === 'download')     { populateDownloadStats(); populateSingleRecordSelect(); updateDLCount(); renderTargetTable(); }
+  if (id === 'sync')         updateSyncCounts();
+  if (id === 'settings')     loadAdminUI();
 
   document.getElementById('main-fab').style.display = (id === 'settings') ? 'none' : 'flex';
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -5827,8 +6271,382 @@ async function syncNow() {
   toast(`✅ Synced ${ok}/${pending.length} records to Firebase`, ok===pending.length?'success':'warn');
 }
 
+
+/* ═══════════════════════════════════════════════════════════
+   OFFICER AUTH SYSTEM
+   Each device stores a list of officer profiles keyed by name.
+   Each profile has: id, name, empid, desig, dept, pinHash.
+   The currently active session is stored in sessionStorage.
+   On load: if no session → show login overlay.
+═══════════════════════════════════════════════════════════ */
+const OFR_KEY     = 'mld_officers_v1';     // localStorage: officer roster
+const OFR_SESSION = 'mld_officer_session'; // sessionStorage: active officer id
+
+function ofrGetAll() {
+  try { return JSON.parse(localStorage.getItem(OFR_KEY) || '[]'); } catch { return []; }
+}
+function ofrSaveAll(list) {
+  localStorage.setItem(OFR_KEY, JSON.stringify(list));
+}
+function ofrCurrentId() {
+  return sessionStorage.getItem(OFR_SESSION) || null;
+}
+function ofrCurrent() {
+  const id = ofrCurrentId();
+  if (!id) return null;
+  return ofrGetAll().find(o => o.id === id) || null;
+}
+
+// ── PIN helpers ──────────────────────────────────────────────
+function pinHash(pin) {
+  // same lightweight hash used for admin passwords
+  return simpleHash('ofr_' + pin);
+}
+function pinNav(el, e, prevId, nextId) {
+  // only allow numeric digits
+  el.value = el.value.replace(/[^0-9]/g, '');
+  if (el.value.length === 1 && nextId) {
+    const n = document.getElementById(nextId);
+    if (n) n.focus();
+  }
+  if (e.key === 'Backspace' && el.value === '' && prevId) {
+    const p = document.getElementById(prevId);
+    if (p) p.focus();
+  }
+}
+function readPin(prefix) {
+  return ['0','1','2','3'].map(i => (document.getElementById(prefix+i)?.value||'')).join('');
+}
+function clearPins(...prefixes) {
+  prefixes.forEach(p => ['0','1','2','3'].forEach(i => {
+    const el = document.getElementById(p+i); if (el) el.value = '';
+  }));
+}
+
+// ── Overlay helpers ──────────────────────────────────────────
+function ofrSwitchTab(tab) {
+  document.getElementById('ofr-tab-login').classList.toggle('on', tab === 'login');
+  document.getElementById('ofr-tab-register').classList.toggle('on', tab === 'register');
+  document.getElementById('ofr-panel-login').style.display    = tab === 'login'    ? '' : 'none';
+  document.getElementById('ofr-panel-register').style.display = tab === 'register' ? '' : 'none';
+  document.getElementById('ofr-err').classList.remove('show');
+  clearPins('pin','reg-pin');
+}
+function ofrShowError(msg) {
+  const el = document.getElementById('ofr-err');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+// ── Show overlay, populate login dropdown ────────────────────
+function showOfficerOverlay() {
+  const overlay = document.getElementById('ofr-overlay');
+  if (overlay) overlay.style.display = 'flex';
+  ofrSwitchTab('login');
+  const officers = ofrGetAll();
+  const sel = document.getElementById('ofr-login-name');
+  if (sel) {
+    sel.innerHTML = '<option value="">— Choose officer —</option>' +
+      officers.map(o => `<option value="${o.id}">${o.name} · ${o.dept}</option>`).join('');
+  }
+  // Toggle empty state
+  const isEmpty = officers.length === 0;
+  const wrap = document.getElementById('ofr-login-select-wrap');
+  const empt = document.getElementById('ofr-login-empty');
+  if (wrap) wrap.style.display = isEmpty ? 'none' : '';
+  if (empt) empt.style.display = isEmpty ? '' : 'none';
+  // Focus first pin after selecting name
+  sel?.addEventListener('change', () => { clearPins('pin'); document.getElementById('pin0')?.focus(); }, { once: false });
+}
+
+// ── Register ─────────────────────────────────────────────────
+function ofrDoRegister() {
+  const name  = document.getElementById('ofr-reg-name')?.value.trim();
+  const empid = document.getElementById('ofr-reg-empid')?.value.trim();
+  const desig = document.getElementById('ofr-reg-desig')?.value;
+  const dept  = document.getElementById('ofr-reg-dept')?.value;
+  const pin   = readPin('reg-pin');
+
+  if (!name)        { ofrShowError('Please enter your full name.'); return; }
+  if (!desig)       { ofrShowError('Please select your designation.'); return; }
+  if (!dept)        { ofrShowError('Please select your department.'); return; }
+  if (pin.length < 4) { ofrShowError('Please enter all 4 PIN digits.'); return; }
+
+  const officers = ofrGetAll();
+  // Check duplicate name in same dept
+  if (officers.find(o => o.name.toLowerCase() === name.toLowerCase() && o.dept === dept)) {
+    ofrShowError('An officer with this name & department already exists. Please login instead.');
+    return;
+  }
+
+  const officer = {
+    id:      Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    name, empid, desig, dept,
+    pinHash:  pinHash(pin),
+    joinedAt: new Date().toISOString()
+  };
+  officers.push(officer);
+  ofrSaveAll(officers);
+  ofrStartSession(officer);
+}
+
+// ── Login ─────────────────────────────────────────────────────
+function ofrDoLogin() {
+  const id  = document.getElementById('ofr-login-name')?.value;
+  const pin = readPin('pin');
+
+  if (!id)            { ofrShowError('Please select your name.'); return; }
+  if (pin.length < 4) { ofrShowError('Please enter all 4 PIN digits.'); return; }
+
+  const officer = ofrGetAll().find(o => o.id === id);
+  if (!officer)                        { ofrShowError('Officer not found. Please register.'); return; }
+  if (pinHash(pin) !== officer.pinHash){ ofrShowError('Incorrect PIN. Please try again.'); clearPins('pin'); document.getElementById('pin0')?.focus(); return; }
+
+  ofrStartSession(officer);
+}
+
+// ── Start session + hide overlay ────────────────────────────
+function ofrStartSession(officer) {
+  sessionStorage.setItem(OFR_SESSION, officer.id);
+  document.getElementById('ofr-overlay').style.display = 'none';
+  ofrApplyProfile(officer);
+  // Sync profile into legacy settings so existing code still works
+  _syncOfficerToSettings(officer);
+  toast(`✅ Welcome, ${officer.name}!`, 'success');
+  try { updateDashboard(); updateBadges(); renderMyProfilePage(); } catch(e) {}
+}
+
+// ── Apply profile to header + form pre-fills ────────────────
+function ofrApplyProfile(officer) {
+  if (!officer) return;
+  const letter = (officer.name||'?')[0].toUpperCase();
+  const el = document.getElementById('officer-name-header');
+  if (el) el.textContent = officer.name;
+  const av = document.getElementById('oc-avatar-letter');
+  if (av) av.textContent = letter;
+  // Pre-fill form
+  const fn = document.getElementById('f-officer');     if (fn) fn.value = officer.name;
+  const fd = document.getElementById('f-designation'); if (fd) fd.value = officer.desig;
+  const fde= document.getElementById('f-dept');        if (fde) fde.value = officer.dept;
+}
+
+// ── Keep legacy settings in sync ────────────────────────────
+function _syncOfficerToSettings(officer) {
+  const s = { name: officer.name, desig: officer.desig, dept: officer.dept, empid: officer.empid||'' };
+  localStorage.setItem('mld_v3_settings', JSON.stringify(s));
+  loadSettings();
+}
+
+// ── Logout ───────────────────────────────────────────────────
+function officerLogout() {
+  if (!confirm('Log out from this device?')) return;
+  sessionStorage.removeItem(OFR_SESSION);
+  showOfficerOverlay();
+  toast('Logged out. See you!', 'info');
+}
+
+// ── Save officer profile edits ───────────────────────────────
+function saveOfficerProfile() {
+  const id = ofrCurrentId();
+  if (!id) return;
+  const officers = ofrGetAll();
+  const idx = officers.findIndex(o => o.id === id);
+  if (idx < 0) return;
+  officers[idx].name  = document.getElementById('prf-name')?.value.trim()  || officers[idx].name;
+  officers[idx].empid = document.getElementById('prf-empid')?.value.trim() || '';
+  officers[idx].desig = document.getElementById('prf-desig')?.value || officers[idx].desig;
+  officers[idx].dept  = document.getElementById('prf-dept')?.value  || officers[idx].dept;
+  ofrSaveAll(officers);
+  ofrApplyProfile(officers[idx]);
+  _syncOfficerToSettings(officers[idx]);
+  renderMyProfilePage();
+}
+
+// ── Change PIN ───────────────────────────────────────────────
+function showChangePinModal() {
+  clearPins('cp-old','cp-new');
+  document.getElementById('change-pin-modal-bg').classList.add('open');
+  setTimeout(() => document.getElementById('cp-old0')?.focus(), 100);
+}
+function closeChangePinModal() {
+  document.getElementById('change-pin-modal-bg').classList.remove('open');
+}
+function doChangePin() {
+  const oldPin = readPin('cp-old');
+  const newPin = readPin('cp-new');
+  const id     = ofrCurrentId();
+  if (!id)             { toast('Not logged in','error'); return; }
+  if (oldPin.length < 4||newPin.length < 4) { toast('⚠️ Enter all 4 digits for both PINs','warn'); return; }
+  const officers = ofrGetAll();
+  const idx = officers.findIndex(o => o.id === id);
+  if (idx < 0) return;
+  if (pinHash(oldPin) !== officers[idx].pinHash) { toast('❌ Current PIN incorrect','error'); clearPins('cp-old'); document.getElementById('cp-old0')?.focus(); return; }
+  officers[idx].pinHash = pinHash(newPin);
+  ofrSaveAll(officers);
+  closeChangePinModal();
+  toast('✅ PIN updated successfully','success');
+}
+
+// ── My Profile page renderer ─────────────────────────────────
+function renderMyProfilePage() {
+  const officer = ofrCurrent();
+  if (!officer) return;
+
+  // Hero card
+  const letter = officer.name[0].toUpperCase();
+  const set = (id, v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  const setH= (id, v) => { const el=document.getElementById(id); if(el) el.innerHTML=v; };
+
+  set('ph-avatar', letter);
+  set('ph-name',  officer.name);
+  set('ph-desig', officer.desig || '—');
+  setH('ph-dept-badge', `🏢 ${officer.dept || '—'}`);
+  set('ph-empid', officer.empid ? `ID: ${officer.empid}` : '');
+
+  // Pre-fill edit form
+  const sf = (id, v) => { const el=document.getElementById(id); if(el) el.value=v||''; };
+  sf('prf-name',  officer.name);
+  sf('prf-empid', officer.empid||'');
+  sf('prf-desig', officer.desig||'');
+  sf('prf-dept',  officer.dept||'');
+
+  // My records (filtered by officer name)
+  const myRecs = APP.records.filter(r =>
+    (r.officerName||'').toLowerCase().trim() === officer.name.toLowerCase().trim()
+  );
+  const now   = new Date();
+  const month = now.getMonth(), year = now.getFullYear();
+  const myMonth  = myRecs.filter(r => { const d=new Date(r.createdAt); return d.getMonth()===month && d.getFullYear()===year; });
+  const mySynced = myRecs.filter(r => r.synced);
+  const myUrgent = myRecs.filter(r => r.priority==='urgent'||r.priority==='high');
+  const myPhotos = myRecs.reduce((s,r) => s + (r.photoCount||0), 0);
+  const myGPS    = myRecs.filter(r => r.lat && r.lng);
+
+  // Streak
+  const streak = _calcStreak(myRecs);
+
+  // Hero stats
+  set('ph-total',  myRecs.length);
+  set('ph-month',  myMonth.length);
+  set('ph-synced', mySynced.length);
+  set('ph-streak', streak);
+
+  // KPI grid
+  set('myd-total',  myRecs.length);
+  set('myd-synced', mySynced.length);
+  set('myd-month',  myMonth.length);
+  set('myd-urgent', myUrgent.length);
+  set('myd-photos', myPhotos);
+  set('myd-gps',    myGPS.length);
+
+  // Streak label
+  const strEl = document.getElementById('myd-streak-lbl');
+  if (strEl) strEl.textContent = streak > 0 ? `🔥 ${streak}-day streak` : '';
+
+  // Activity heatmap — last 28 days
+  _renderStreakGrid(myRecs);
+
+  // Priority breakdown bars
+  _renderPrioChart(myRecs);
+
+  // Recent records list
+  _renderMyRecentList(myRecs.slice(0, 8));
+}
+
+function _calcStreak(recs) {
+  // Count consecutive days with at least 1 inspection (from today backwards)
+  const days = new Set(recs.map(r => new Date(r.createdAt).toDateString()));
+  let streak = 0, d = new Date();
+  while (days.has(d.toDateString())) {
+    streak++;
+    d.setDate(d.getDate() - 1);
+  }
+  return streak;
+}
+
+function _renderStreakGrid(recs) {
+  const grid = document.getElementById('myd-streak-grid');
+  if (!grid) return;
+  // Count per day for last 28 days
+  const dayCounts = {};
+  recs.forEach(r => {
+    const k = new Date(r.createdAt).toDateString();
+    dayCounts[k] = (dayCounts[k]||0) + 1;
+  });
+  const cells = [];
+  const today = new Date();
+  for (let i = 27; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const key = d.toDateString();
+    const cnt = dayCounts[key] || 0;
+    const lvl = cnt === 0 ? '' : cnt === 1 ? 'lv1' : cnt <= 3 ? 'lv2' : cnt <= 5 ? 'lv3' : 'lv4';
+    const label = `${d.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})}: ${cnt} inspection${cnt!==1?'s':''}`;
+    cells.push(`<div class="s-cell ${lvl}" title="${label}"></div>`);
+  }
+  grid.innerHTML = cells.join('');
+}
+
+function _renderPrioChart(recs) {
+  const el = document.getElementById('myd-prio-chart');
+  if (!el) return;
+  const total = recs.length || 1;
+  const prioCfg = [
+    { key:'urgent', label:'🔴 Urgent',  color:'var(--crimson)' },
+    { key:'high',   label:'🟠 High',    color:'var(--saffron)' },
+    { key:'medium', label:'🟡 Medium',  color:'var(--gold)'    },
+    { key:'low',    label:'🟢 Low',     color:'var(--jade)'    },
+  ];
+  el.innerHTML = prioCfg.map(p => {
+    const cnt = recs.filter(r => r.priority === p.key).length;
+    const pct = Math.round(cnt / total * 100);
+    return `<div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+        <span>${p.label}</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-weight:600">${cnt}</span>
+      </div>
+      <div style="height:8px;background:var(--stone);border-radius:4px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${p.color};border-radius:4px;transition:.5s"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function _renderMyRecentList(recs) {
+  const el = document.getElementById('myd-recent-list');
+  if (!el) return;
+  if (!recs.length) {
+    el.innerHTML = `<div style="padding:24px;text-align:center;color:var(--text-3);font-size:13px">No inspections yet</div>`;
+    return;
+  }
+  el.innerHTML = recs.map(r => {
+    const thumb = (r.thumbs&&r.thumbs[0]) || (r.photos&&r.photos[0]) || null;
+    const imgEl = thumb
+      ? `<img class="myr-thumb" src="${thumb}" onerror="this.outerHTML='<div class=myr-no-img>📷</div>'">`
+      : `<div class="myr-no-img">📷</div>`;
+    return `<div class="my-rec-row" onclick="viewRecord('${r.id}')">
+      ${imgEl}
+      <div class="myr-body">
+        <div class="myr-loc">${r.location||r.department||'—'}</div>
+        <div class="myr-meta">${r.department} · ${fmtDT(r.datetime)}</div>
+      </div>
+      <div class="myr-prio"><span class="pill pill-${r.priority}">${prioPill(r.priority)}</span></div>
+    </div>`;
+  }).join('');
+}
+
+function filterMyRecords() {
+  const officer = ofrCurrent();
+  if (!officer) return;
+  window._d('showPage', ['records']);
+  setTimeout(() => {
+    const s = document.getElementById('search-inp');
+    if (s) { s.value = officer.name; filterAndRender(); }
+  }, 200);
+}
+
 /* ─────────────────────────────────────────
-   SETTINGS
+   SETTINGS  (legacy — wraps officer profile)
 ───────────────────────────────────────── */
 function saveSettings() {
   const s = {
@@ -5839,26 +6657,40 @@ function saveSettings() {
   };
   localStorage.setItem('mld_v3_settings', JSON.stringify(s));
   document.getElementById('officer-name-header').textContent = s.name||'Officer';
+  // Also update active officer profile if logged in
+  const officer = ofrCurrent();
+  if (officer && s.name) {
+    const all = ofrGetAll();
+    const idx = all.findIndex(o => o.id === officer.id);
+    if (idx >= 0) {
+      if (s.name)  all[idx].name  = s.name;
+      if (s.desig) all[idx].desig = s.desig;
+      if (s.dept)  all[idx].dept  = s.dept;
+      if (s.empid) all[idx].empid = s.empid;
+      ofrSaveAll(all);
+      ofrApplyProfile(all[idx]);
+    }
+  }
 }
 
 function loadSettings() {
   const s = getAllSettings();
-  if (document.getElementById('s-name')) document.getElementById('s-name').value = s.name||'';
+  if (document.getElementById('s-name'))  document.getElementById('s-name').value  = s.name||'';
   if (document.getElementById('s-desig')) document.getElementById('s-desig').value = s.desig||'';
-  if (document.getElementById('s-dept')) document.getElementById('s-dept').value = s.dept||'';
+  if (document.getElementById('s-dept'))  document.getElementById('s-dept').value  = s.dept||'';
   if (document.getElementById('s-empid')) document.getElementById('s-empid').value = s.empid||'';
   document.getElementById('officer-name-header').textContent = s.name||'Officer';
-
-  // Prefill form
-  if (s.name && document.getElementById('f-officer')) document.getElementById('f-officer').value = s.name;
+  if (s.name && document.getElementById('f-officer'))     document.getElementById('f-officer').value     = s.name;
   if (s.desig && document.getElementById('f-designation')) document.getElementById('f-designation').value = s.desig;
-  if (s.dept && document.getElementById('f-dept')) document.getElementById('f-dept').value = s.dept;
+  if (s.dept && document.getElementById('f-dept'))        document.getElementById('f-dept').value        = s.dept;
 }
 
 function getSetting(k) { return getAllSettings()[k]||''; }
 function getAllSettings() {
   try { return JSON.parse(localStorage.getItem('mld_v3_settings')||'{}'); } catch { return {}; }
 }
+
+
 
 function clearAllData() {
   if (!confirm('⚠️ Delete ALL local inspection records? Firebase records remain. This cannot be undone.')) return;
@@ -9769,6 +10601,19 @@ try { if (typeof coordFilterStatus       === 'function') window['coordFilterStat
 try { if (typeof exportCoordExcel        === 'function') window['exportCoordExcel']          = exportCoordExcel;        } catch(e) {}
 try { if (typeof updateCoordBadge        === 'function') window['updateCoordBadge']          = updateCoordBadge;        } catch(e) {}
 try { if (typeof autoImportCoordFromInspections === 'function') window['autoImportCoordFromInspections'] = autoImportCoordFromInspections; } catch(e) {}
+
+// ── Officer auth system globals ──────────────────────────────
+try { window.ofrSwitchTab       = ofrSwitchTab;       } catch(e) {}
+try { window.ofrDoLogin         = ofrDoLogin;         } catch(e) {}
+try { window.ofrDoRegister      = ofrDoRegister;      } catch(e) {}
+try { window.officerLogout      = officerLogout;      } catch(e) {}
+try { window.saveOfficerProfile = saveOfficerProfile; } catch(e) {}
+try { window.showChangePinModal = showChangePinModal; } catch(e) {}
+try { window.closeChangePinModal= closeChangePinModal;} catch(e) {}
+try { window.doChangePin        = doChangePin;        } catch(e) {}
+try { window.pinNav             = pinNav;             } catch(e) {}
+try { window.filterMyRecords    = filterMyRecords;    } catch(e) {}
+try { window.renderMyProfilePage= renderMyProfilePage;} catch(e) {}
 
 // Drain any queued calls made before this script loaded
 if (window._drainQueue) window._drainQueue();
