@@ -3900,6 +3900,94 @@ service cloud.firestore {
 ═══════════════════════════════════════ -->
 <script>
 /* ─────────────────────────────────────────
+   INDEXED DB PHOTO STORE
+   Photos are large (base64). localStorage on mobile is ~5MB — storing
+   photos there causes QuotaExceededError. IndexedDB is effectively
+   unlimited and is available on all modern mobile browsers.
+   We store photos here keyed by record id, and keep only photoCount
+   (a small integer) in the localStorage record blob.
+───────────────────────────────────────── */
+const PhotoDB = (() => {
+  const DB_NAME  = 'mld_photos_v1';
+  const STORE    = 'photos';
+  let _db = null;
+
+  function open() {
+    if (_db) return Promise.resolve(_db);
+    return new Promise((res, rej) => {
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = e => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains(STORE)) {
+          db.createObjectStore(STORE, { keyPath: 'id' });
+        }
+      };
+      req.onsuccess = e => { _db = e.target.result; res(_db); };
+      req.onerror   = () => rej(req.error);
+    });
+  }
+
+  return {
+    /** Save photos (array of base64 strings) for a record */
+    async save(recordId, photos) {
+      if (!photos || !photos.length) return;
+      try {
+        const db = await open();
+        await new Promise((res, rej) => {
+          const tx = db.transaction(STORE, 'readwrite');
+          tx.objectStore(STORE).put({ id: recordId, photos });
+          tx.oncomplete = res;
+          tx.onerror    = () => rej(tx.error);
+        });
+      } catch(e) { console.warn('[PhotoDB] save failed:', e); }
+    },
+
+    /** Load photos for a record — returns [] if none */
+    async load(recordId) {
+      try {
+        const db = await open();
+        return await new Promise((res, rej) => {
+          const tx  = db.transaction(STORE, 'readonly');
+          const req = tx.objectStore(STORE).get(recordId);
+          req.onsuccess = () => res(req.result?.photos || []);
+          req.onerror   = () => rej(req.error);
+        });
+      } catch(e) { return []; }
+    },
+
+    /** Delete photos for a record (called on record delete) */
+    async remove(recordId) {
+      try {
+        const db = await open();
+        await new Promise((res, rej) => {
+          const tx = db.transaction(STORE, 'readwrite');
+          tx.objectStore(STORE).delete(recordId);
+          tx.oncomplete = res;
+          tx.onerror    = () => rej(tx.error);
+        });
+      } catch(e) { console.warn('[PhotoDB] remove failed:', e); }
+    },
+
+    /** Purge photos for record IDs that no longer exist in APP.records */
+    async gc(liveIds) {
+      try {
+        const db  = await open();
+        const all = await new Promise((res, rej) => {
+          const tx  = db.transaction(STORE, 'readonly');
+          const req = tx.objectStore(STORE).getAllKeys();
+          req.onsuccess = () => res(req.result || []);
+          req.onerror   = () => rej(req.error);
+        });
+        const dead = all.filter(k => !liveIds.has(k));
+        if (!dead.length) return;
+        const tx = db.transaction(STORE, 'readwrite');
+        dead.forEach(k => tx.objectStore(STORE).delete(k));
+      } catch(e) {}
+    }
+  };
+})();
+
+/* ─────────────────────────────────────────
    APP STATE
 ───────────────────────────────────────── */
 const APP = {
@@ -3911,8 +3999,27 @@ const APP = {
   PER_PAGE: 10,
 
   save() {
-    localStorage.setItem('mld_v3_records', JSON.stringify(this.records));
-    localStorage.setItem('mld_v3_coord', JSON.stringify(this.coordCases || []));
+    // ⚠️  Strip base64 photos before writing to localStorage.
+    // Photos are stored in IndexedDB (PhotoDB) which has no quota limit.
+    // Storing photos in localStorage causes QuotaExceededError on mobile (~5MB limit).
+    const lean = this.records.map(r => {
+      if (!r.photos || !r.photos.length) return r;
+      const { photos, ...rest } = r; // eslint-disable-line no-unused-vars
+      return rest;
+    });
+    try {
+      localStorage.setItem('mld_v3_records', JSON.stringify(lean));
+    } catch(e) {
+      if (e.name === 'QuotaExceededError') {
+        // Emergency: drop oldest records until it fits
+        console.warn('[MLD] localStorage quota hit — trimming old records');
+        const trimmed = lean.slice(0, Math.max(1, Math.floor(lean.length * 0.7)));
+        try { localStorage.setItem('mld_v3_records', JSON.stringify(trimmed)); } catch(_) {}
+      }
+    }
+    try {
+      localStorage.setItem('mld_v3_coord', JSON.stringify(this.coordCases || []));
+    } catch(e) {}
   },
   saveTickets() { localStorage.setItem('mld_v3_tickets', JSON.stringify(this.tickets)); },
 
@@ -3955,6 +4062,11 @@ let voiceRec = null;
 ───────────────────────────────────────── */
 window.addEventListener('load', () => {
   APP.load();
+  // Garbage-collect any orphaned IndexedDB photo entries (records that were deleted)
+  setTimeout(() => {
+    const liveIds = new Set(APP.records.map(r => r.id));
+    PhotoDB.gc(liveIds).catch(() => {});
+  }, 3000);
   loadSettings();
   setDefaultDT();
   loadCustomDepts();   // restore user-saved departments
@@ -4225,7 +4337,7 @@ async function submitInspection() {
     followup:     v('f-followup'),
     followupDate: v('f-followup-date'),
     photoCount:   photoFiles.length,
-    photos:       [...photoDataURLs],   // store base64 for local viewing
+    photos:       [],   // NOT stored in localStorage — kept in IndexedDB via PhotoDB
     synced:       false,
     createdAt:    new Date().toISOString(),
     createdAtISO: new Date().toISOString(),  // plain string for Firestore orderBy
@@ -4233,6 +4345,11 @@ async function submitInspection() {
   };
 
   APP.records.unshift(record);
+  // Save photos to IndexedDB (no quota limits) — record in localStorage has only photoCount
+  if (photoDataURLs.length) {
+    PhotoDB.save(record.id, [...photoDataURLs]).catch(() => {});
+    record.photos = [...photoDataURLs]; // keep in-memory for immediate display this session
+  }
   APP.save();
 
   // Auto-create coordination tickets for each concerned department
@@ -4653,7 +4770,7 @@ function renderPage() {
   }
 }
 
-function viewRecord(id) {
+async function viewRecord(id) {
   const r = APP.records.find(x => x.id===id);
   if (!r) return;
   const admin = isAdmin();
@@ -4663,42 +4780,48 @@ function viewRecord(id) {
 
   document.getElementById('modal-title').textContent = `📋 ${r.officerName} — ${r.department}`;
 
+  // Load photos: first check in-memory, then IndexedDB (photos stripped from localStorage to save quota)
+  let photos = (r.photos && r.photos.length) ? r.photos : await PhotoDB.load(id);
+  // Cache back into record for this session so lightbox works
+  if (photos.length && (!r.photos || !r.photos.length)) r.photos = photos;
+
   // Build photos HTML safely (no base64 in onclick attr)
-  let photosHtml = '';
-  if (r.photos && r.photos.length > 0) {
-    const thumbs = r.photos.map((src, i) => {
-      const thumb = document.createElement('div');
-      thumb.style.cssText = 'position:relative;cursor:pointer;display:inline-block';
-      const img = document.createElement('img');
-      img.src = src;
-      img.style.cssText = 'width:120px;height:90px;object-fit:cover;border-radius:8px;border:2px solid #DDD9D0;transition:.2s;display:block';
-      img.onmouseover = () => { img.style.borderColor = '#E8650A'; img.style.transform = 'scale(1.04)'; };
-      img.onmouseout  = () => { img.style.borderColor = '#DDD9D0'; img.style.transform = 'scale(1)'; };
-      const badge = document.createElement('div');
-      badge.style.cssText = 'position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,.6);color:white;font-size:10px;padding:2px 6px;border-radius:4px;pointer-events:none';
-      badge.textContent = `Photo ${i+1}`;
-      thumb.appendChild(img);
-      thumb.appendChild(badge);
-      thumb.addEventListener('click', () => openPhotoViewerById(id, i));
-      // Serialize to string for innerHTML insertion
-      const tmp = document.createElement('div');
-      tmp.appendChild(thumb);
-      return tmp.innerHTML;
-    }).join('');
-    photosHtml = `
-    <div style="margin-bottom:16px">
-      <label style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-3);font-weight:600">📷 Field Photos (${r.photos.length})</label>
-      <div id="modal-photo-thumbs" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">${thumbs}</div>
-    </div>`;
-  } else if (r.photoCount > 0) {
-    photosHtml = `
-    <div style="margin-bottom:16px">
-      <label style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-3);font-weight:600">📷 Field Photos</label>
-      <div style="background:var(--stone);border-radius:8px;padding:14px;margin-top:8px;font-size:13px;color:var(--text-3)">
-        ${r.photoCount} photo(s) attached — stored in Firebase Storage (preview unavailable for cloud-synced records).
-      </div>
-    </div>`;
+  function buildPhotoHtml(photoArr) {
+    if (photoArr && photoArr.length > 0) {
+      const thumbs = photoArr.map((src, i) => {
+        const thumb = document.createElement('div');
+        thumb.style.cssText = 'position:relative;cursor:pointer;display:inline-block';
+        const img = document.createElement('img');
+        img.src = src;
+        img.style.cssText = 'width:120px;height:90px;object-fit:cover;border-radius:8px;border:2px solid #DDD9D0;transition:.2s;display:block';
+        img.onmouseover = () => { img.style.borderColor = '#E8650A'; img.style.transform = 'scale(1.04)'; };
+        img.onmouseout  = () => { img.style.borderColor = '#DDD9D0'; img.style.transform = 'scale(1)'; };
+        const badge = document.createElement('div');
+        badge.style.cssText = 'position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,.6);color:white;font-size:10px;padding:2px 6px;border-radius:4px;pointer-events:none';
+        badge.textContent = `Photo ${i+1}`;
+        thumb.appendChild(img);
+        thumb.appendChild(badge);
+        thumb.addEventListener('click', () => openPhotoViewerById(id, i));
+        const tmp = document.createElement('div');
+        tmp.appendChild(thumb);
+        return tmp.innerHTML;
+      }).join('');
+      return `<div style="margin-bottom:16px">
+        <label style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-3);font-weight:600">📷 Field Photos (${photoArr.length})</label>
+        <div id="modal-photo-thumbs" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">${thumbs}</div>
+      </div>`;
+    } else if (r.photoCount > 0) {
+      return `<div style="margin-bottom:16px">
+        <label style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-3);font-weight:600">📷 Field Photos</label>
+        <div style="background:var(--stone);border-radius:8px;padding:14px;margin-top:8px;font-size:13px;color:var(--text-3)">
+          ${r.photoCount} photo(s) attached — stored in Firebase Storage (preview unavailable for cloud-synced records).
+        </div>
+      </div>`;
+    }
+    return '';
   }
+
+  const photosHtml = buildPhotoHtml(photos);
 
   document.getElementById('modal-body').innerHTML = `
     <div class="detail-grid">
@@ -4764,6 +4887,7 @@ function deleteRecord(id) {
   if (r?.fbId && fb?.ok && fb.db) {
     fb.deleteDoc(fb.doc(fb.db, 'inspections', r.fbId)).catch(() => {});
   }
+  PhotoDB.remove(id).catch(() => {}); // clean up IndexedDB photos
   APP.records = APP.records.filter(x => x.id!==id);
   APP.save();
   updateDashboard();
@@ -4780,9 +4904,14 @@ function closeModal() { document.getElementById('modal-bg').classList.remove('op
 let _pvRecord = null;
 let _pvIndex  = 0;
 
-function openPhotoViewer(id, idx) {
+async function openPhotoViewer(id, idx) {
   const r = APP.records.find(x => x.id === id);
-  if (!r || !r.photos || r.photos.length === 0) return;
+  if (!r) return;
+  // Load from IndexedDB if not in memory
+  if (!r.photos || !r.photos.length) {
+    r.photos = await PhotoDB.load(id);
+  }
+  if (!r.photos || !r.photos.length) return;
   _pvRecord = r;
   _pvIndex  = idx;
   renderPhotoViewer();
