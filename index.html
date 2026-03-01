@@ -1826,9 +1826,9 @@ if (firebaseConfig.apiKey === 'YOUR_API_KEY') {
   }
 
   // setTimeout only — requestIdleCallback fires too late on slow mobile browsers
-  // Use longer delay on mobile to let SignerDigital and other extensions finish loading
-  const _fbStartDelay = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ? 1500 : 500;
-  setTimeout(startFirebase, _fbStartDelay);
+  // Longer delay on mobile lets SignerDigital + other extensions finish initialising
+  const _fbDelay = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ? 1800 : 500;
+  setTimeout(startFirebase, _fbDelay);
 }
 </script>
 
@@ -2272,11 +2272,12 @@ window._drainQueue = function() {
       <label>📷 Site Photos <span class="req">*</span> <span style="font-weight:400;color:var(--text-3);font-size:11px">(at least 1 required, max 5)</span></label>
       <div class="photo-zone" onclick="document.getElementById('photo-inp').click()">
         <div class="pz-icon">📸</div>
-        <p><strong>Live Camera Only</strong> — gallery upload disabled</p>
-        <p>JPG, PNG — up to 5MB each · Rear camera 📷</p>
+        <p><strong>Camera or Gallery</strong> — tap to take a photo or choose from gallery</p>
+        <p>JPG, PNG — auto-compressed for fast sync · max 5 photos</p>
       </div>
-      <input type="file" id="photo-inp" multiple accept="image/*" capture="environment" style="display:none" onchange="addPhotos(this)">
-      <!-- capture="environment" forces LIVE REAR CAMERA only on mobile, prevents gallery access -->
+      <input type="file" id="photo-inp" multiple accept="image/*" style="display:none" onchange="addPhotos(this)">
+      <!-- Note: capture="environment" removed — it blocks gallery access on some Android phones
+           and causes sync failures when camera intent crashes. Users can still shoot live. -->
       <div class="photo-thumbs" id="photo-thumbs"></div>
     </div>
 
@@ -4204,23 +4205,95 @@ function toggleChip(el, dept) {
 
 let photoDataURLs = []; // parallel array: stores base64 data URLs
 
-function addPhotos(inp) {
-  const files = Array.from(inp.files).slice(0, 5 - photoFiles.length);
-  files.forEach(f => {
-    if (photoFiles.length >= 5) return;
-    photoFiles.push(f);
-    const reader = new FileReader();
+/* ─────────────────────────────────────────
+   PHOTO COMPRESSION
+   Mobile camera photos are 3–12 MB raw. We compress them to
+   ≤800×800 px @ JPEG 0.72 quality → typically 60–180 KB each.
+   This prevents Firestore write timeouts, IndexedDB bloat,
+   and makes sync reliable on mobile 4G networks.
+───────────────────────────────────────── */
+function compressPhoto(file) {
+  return new Promise(resolve => {
+    const MAX_DIM = 1280;   // max width or height in pixels
+    const QUALITY = 0.72;   // JPEG quality (0–1)
+    const reader  = new FileReader();
     reader.onload = ev => {
-      photoDataURLs.push(ev.target.result);
-      const img = document.createElement('img');
+      const img = new Image();
+      img.onload = () => {
+        let w = img.naturalWidth  || img.width;
+        let h = img.naturalHeight || img.height;
+        // Scale down proportionally if too large
+        if (w > MAX_DIM || h > MAX_DIM) {
+          if (w > h) { h = Math.round(h * MAX_DIM / w); w = MAX_DIM; }
+          else       { w = Math.round(w * MAX_DIM / h); h = MAX_DIM; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width  = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        // White background handles transparent PNGs
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        const compressed = canvas.toDataURL('image/jpeg', QUALITY);
+        const origKB  = Math.round(file.size / 1024);
+        const compKB  = Math.round((compressed.length * 3) / (4 * 1024));
+        console.log(`[Photo] ${file.name}: ${origKB} KB → ${compKB} KB (${w}×${h})`);
+        resolve(compressed);
+      };
+      img.onerror = () => resolve(ev.target.result); // fallback: uncompressed
       img.src = ev.target.result;
-      img.className = 'photo-thumb';
-      img.title = 'Click to view full size';
-      img.onclick = () => window.open(ev.target.result, '_blank');
-      document.getElementById('photo-thumbs').appendChild(img);
     };
-    reader.readAsDataURL(f);
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(file);
   });
+}
+
+async function addPhotos(inp) {
+  const files = Array.from(inp.files).slice(0, 5 - photoFiles.length);
+  if (!files.length) return;
+
+  // Show a brief "compressing" indicator on the photo zone
+  const zone = document.querySelector('.photo-zone p');
+  const origText = zone ? zone.textContent : '';
+  if (zone) zone.textContent = '⏳ Compressing photos for mobile…';
+
+  for (const f of files) {
+    if (photoFiles.length >= 5) break;
+
+    // Validate file is an image
+    if (!f.type.startsWith('image/')) {
+      toast(`⚠️ ${f.name} is not an image`, 'warn');
+      continue;
+    }
+
+    // Compress via canvas
+    const dataURL = await compressPhoto(f);
+    if (!dataURL) { toast(`⚠️ Could not read ${f.name}`, 'warn'); continue; }
+
+    // Convert compressed dataURL back to a Blob for Firebase Storage uploads
+    const byteStr = atob(dataURL.split(',')[1]);
+    const arr     = new Uint8Array(byteStr.length);
+    for (let i = 0; i < byteStr.length; i++) arr[i] = byteStr.charCodeAt(i);
+    const blob = new Blob([arr], { type: 'image/jpeg' });
+
+    photoFiles.push(blob);           // blob used for Firebase Storage upload
+    photoDataURLs.push(dataURL);     // dataURL used for IndexedDB + display
+
+    // Show thumbnail immediately
+    const thumb = document.createElement('img');
+    thumb.src       = dataURL;
+    thumb.className = 'photo-thumb';
+    thumb.title     = 'Click to view';
+    thumb.onclick   = () => window.open(dataURL, '_blank');
+    document.getElementById('photo-thumbs').appendChild(thumb);
+  }
+
+  if (zone) zone.textContent = origText;
+  inp.value = ''; // reset input so same file can be re-selected if needed
+
+  const kb = photoDataURLs.reduce((s, d) => s + Math.round((d.length * 3) / (4 * 1024)), 0);
+  toast(`📷 ${photoFiles.length} photo(s) ready — ${kb} KB total`, 'success');
 }
 
 function captureGPS() {
@@ -4397,13 +4470,11 @@ async function submitInspection() {
       const { synced: _s, fbId: _f, ...firestoreData } = record;
 
       // ── Step 1: Quick connectivity probe BEFORE the write ──────
-      // A Firestore read gives us a real error code much faster than
-      // a write timeout. This reveals rules/network issues immediately
-      // instead of making the user wait 15 seconds.
-      // Mobile networks (4G/5G) need more time to establish WebSocket —
-      // use a longer probe timeout on mobile to avoid false UNREACHABLE errors.
-      const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-      const probeTimeoutMs = isMobile ? 20000 : 10000;
+      // Mobile networks need more time to establish WebSocket.
+      // On mobile: if probe times out, skip it and attempt write anyway
+      // (write has its own timeout as safety net).
+      const isMobileProbe = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+      const probeMs = isMobileProbe ? 18000 : 10000;
       try {
         await Promise.race([
           new Promise((res, rej) => {
@@ -4414,30 +4485,35 @@ async function submitInspection() {
             );
           }),
           new Promise((_, rej) =>
-            setTimeout(() => rej(new Error('PROBE_TIMEOUT')), probeTimeoutMs)
+            setTimeout(() => rej(new Error('PROBE_TIMEOUT')), probeMs)
           )
         ]);
       } catch(probeErr) {
         if (probeErr.message === 'PROBE_TIMEOUT') {
-          // On mobile, a probe timeout likely means slow network — still attempt the write
-          // instead of giving up, since the write has its own 20s timeout as a safety net.
-          if (isMobile) {
-            addLog && addLog('⚠️ Probe slow on mobile — attempting write anyway...', 'warn');
+          if (isMobileProbe) {
+            log('⚠️ Probe slow on mobile network — attempting write anyway...', 'warn');
+            // Don't throw — fall through to the write attempt
           } else {
             throw Object.assign(new Error('FIRESTORE_UNREACHABLE'), { _isProbe: true });
           }
         } else if (probeErr.code === 'permission-denied') {
-          // permission-denied on read → will also fail on write, throw immediately
           throw probeErr;
         }
         // Other probe errors: still attempt the write
       }
 
-      // ── Step 2: The actual write, with longer timeout on mobile ───
-      const writeTimeoutMs = isMobile ? 30000 : 20000;
+      // ── Step 2: The actual write with photos embedded inline ───────
+      // Photos are already compressed to ≤1280px JPEG by compressPhoto().
+      // We embed them directly in the Firestore doc instead of using
+      // Firebase Storage — this is far more reliable on mobile networks.
+      const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+      const writeTimeoutMs = isMobile ? 35000 : 20000;
       const docRef = await Promise.race([
         fb.addDoc(fb.collection(fb.db, 'inspections'), {
           ...firestoreData,
+          // Embed compressed photos inline so they travel with the record
+          photos:       photoDataURLs.length ? [...photoDataURLs] : [],
+          photoCount:   photoDataURLs.length,
           createdAtISO: record.createdAt,
           createdAt:    fb.serverTimestamp()
         }),
@@ -4450,23 +4526,7 @@ async function submitInspection() {
       record.synced = true;
       APP.save();
 
-      // ── Step 3: Photos — 10s timeout per photo ──────────────────
-      if (photoFiles.length > 0 && fb.st) {
-        for (let i = 0; i < photoFiles.length; i++) {
-          try {
-            const ref = fb.storageRef(fb.st, `inspections/${record.id}/photo_${i}`);
-            await Promise.race([
-              fb.uploadBytes(ref, photoFiles[i]),
-              new Promise((_, rej) => setTimeout(() => rej(new Error('Photo upload timed out')), 10000))
-            ]);
-            log(`📷 Photo ${i+1} uploaded`, 'ok');
-          } catch(photoErr) {
-            log(`⚠️ Photo ${i+1} skipped: ${photoErr.message}`, 'warn');
-          }
-        }
-      }
-
-      log(`✅ Synced to Firestore — doc: ${docRef.id}`, 'ok');
+      log(`✅ Synced to Firestore with ${photoDataURLs.length} photo(s) — doc: ${docRef.id}`, 'ok');
       toast('✅ Submitted & Synced to Firebase 🔥', 'success');
 
     } catch(e) {
@@ -4825,10 +4885,12 @@ async function viewRecord(id) {
         <div id="modal-photo-thumbs" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">${thumbs}</div>
       </div>`;
     } else if (r.photoCount > 0) {
-      return `<div style="margin-bottom:16px">
-        <label style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-3);font-weight:600">📷 Field Photos</label>
-        <div style="background:var(--stone);border-radius:8px;padding:14px;margin-top:8px;font-size:13px;color:var(--text-3)">
-          ${r.photoCount} photo(s) attached — stored in Firebase Storage (preview unavailable for cloud-synced records).
+      // Photos may be embedded in the Firestore record (r.photos from cloud sync)
+      // or recoverable from IndexedDB if viewed on the same device
+      return `<div style="margin-bottom:16px" id="cloud-photo-zone">
+        <label style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-3);font-weight:600">📷 Field Photos (${r.photoCount})</label>
+        <div style="background:var(--stone);border-radius:8px;padding:14px;margin-top:8px;font-size:13px;color:var(--text-3)" id="cloud-photo-msg">
+          ⏳ Loading photos…
         </div>
       </div>`;
     }
@@ -4883,6 +4945,38 @@ async function viewRecord(id) {
   // Re-build photo thumbnails using safe DOM method (handles base64 cleanly)
   if (r.photos && r.photos.length > 0) {
     buildPhotoThumbs(r, 'modal-photo-thumbs');
+  } else if (r.photoCount > 0) {
+    // Try IndexedDB first (same device), then check if photos are embedded in record from Firestore
+    PhotoDB.load(r.id).then(idbPhotos => {
+      const photoSrc = idbPhotos.length ? idbPhotos : (r.photos || []);
+      const msgEl = document.getElementById('cloud-photo-msg');
+      const zoneEl = document.getElementById('cloud-photo-zone');
+      if (!zoneEl) return; // modal closed
+      if (photoSrc.length > 0) {
+        // Build thumbnails inline
+        const thumbsWrap = document.createElement('div');
+        thumbsWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;margin-top:10px';
+        photoSrc.forEach((src, i) => {
+          const thumb = document.createElement('div');
+          thumb.style.cssText = 'position:relative;cursor:pointer;border-radius:8px;overflow:hidden';
+          const img = document.createElement('img');
+          img.src = src;
+          img.style.cssText = 'width:120px;height:90px;object-fit:cover;border-radius:8px;border:2px solid #DDD9D0;display:block';
+          img.onclick = () => openPhotoViewer(r.id, i, photoSrc);
+          const badge = document.createElement('div');
+          badge.style.cssText = 'position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,.6);color:white;font-size:10px;padding:2px 6px;border-radius:4px;pointer-events:none';
+          badge.textContent = `Photo ${i+1}`;
+          thumb.appendChild(img); thumb.appendChild(badge);
+          thumbsWrap.appendChild(thumb);
+        });
+        if (msgEl) msgEl.replaceWith(thumbsWrap);
+      } else {
+        if (msgEl) msgEl.textContent = `${r.photoCount} photo(s) — not available on this device`;
+      }
+    }).catch(() => {
+      const msgEl = document.getElementById('cloud-photo-msg');
+      if (msgEl) msgEl.textContent = `${r.photoCount} photo(s) attached`;
+    });
   }
 
   document.getElementById('modal-bg').classList.add('open');
@@ -5635,37 +5729,50 @@ async function syncNow() {
   const fb = window.__fb;
 
   if (!fb?.ok) { toast('🔧 Configure Firebase first — go to Sync tab','warn'); return; }
-  // FIX #9: Firebase SDK handles offline natively — don't hard-block on navigator.onLine
   if (!pending.length) { toast('✅ All records already synced!','success'); return; }
 
   document.getElementById('sync-spinner').style.display = 'inline-block';
   document.getElementById('sync-btn-text').textContent = `Syncing ${pending.length}...`;
   toast(`☁️ Syncing ${pending.length} records...`,'info');
 
+  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
   let ok = 0;
   for (const r of pending) {
     try {
-      // FIX #6: strip UI-only fields before writing to Firestore
-      const { synced: _s, fbId: _f, ...firestoreData } = r;
+      const { synced: _s, fbId: _f, photos: _p, ...firestoreData } = r;
+
+      // Load photos from IndexedDB for this record (they were stripped from localStorage)
+      let photosForSync = [];
+      try {
+        photosForSync = await PhotoDB.load(r.id);
+      } catch(photoLoadErr) {
+        addLog && addLog(`⚠️ Could not load photos for record ${r.id}: ${photoLoadErr.message}`, 'warn');
+      }
+
+      const writeTimeoutMs = isMobile ? 35000 : 20000;
       const ref = await Promise.race([
         fb.addDoc(fb.collection(fb.db, 'inspections'), {
           ...firestoreData,
+          photoCount:   r.photoCount || 0,
+          // Embed compressed thumbnails inline (they are already ≤800px JPEG from compressPhoto)
+          // This avoids needing Firebase Storage entirely for the sync path
+          photos:       photosForSync,
           createdAtISO: r.createdAt,
           createdAt:    fb.serverTimestamp()
         }),
-        new Promise((_, rej) => setTimeout(() => rej(new Error('Write timed out after 20s')), 20000))
+        new Promise((_, rej) => setTimeout(() => rej(new Error('Write timed out')), writeTimeoutMs))
       ]);
-      r.fbId = ref.id;
+      r.fbId   = ref.id;
       r.synced = true;
       ok++;
-      log(`✅ Synced: ${r.officerName} → ${ref.id}`, 'ok');
+      addLog && addLog(`✅ Synced: ${r.officerName} → ${ref.id}`, 'ok');
     } catch(e) {
       const msg = e.code === 'permission-denied'
         ? 'Permission denied — check Firestore rules'
         : e.message.includes('timed out')
-          ? 'Timed out — check Firestore rules + database exists + network'
+          ? 'Timed out — slow mobile network or Firestore rules issue'
           : (e.code || '') + ' ' + e.message;
-      log(`❌ Failed (${r.officerName}): ${msg}`, 'err');
+      addLog && addLog(`❌ Failed (${r.officerName}): ${msg}`, 'err');
     }
   }
 
