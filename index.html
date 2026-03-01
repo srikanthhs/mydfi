@@ -1826,7 +1826,9 @@ if (firebaseConfig.apiKey === 'YOUR_API_KEY') {
   }
 
   // setTimeout only — requestIdleCallback fires too late on slow mobile browsers
-  setTimeout(startFirebase, 500);
+  // Use longer delay on mobile to let SignerDigital and other extensions finish loading
+  const _fbStartDelay = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ? 1500 : 500;
+  setTimeout(startFirebase, _fbStartDelay);
 }
 </script>
 
@@ -4398,6 +4400,10 @@ async function submitInspection() {
       // A Firestore read gives us a real error code much faster than
       // a write timeout. This reveals rules/network issues immediately
       // instead of making the user wait 15 seconds.
+      // Mobile networks (4G/5G) need more time to establish WebSocket —
+      // use a longer probe timeout on mobile to avoid false UNREACHABLE errors.
+      const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+      const probeTimeoutMs = isMobile ? 20000 : 10000;
       try {
         await Promise.race([
           new Promise((res, rej) => {
@@ -4408,19 +4414,27 @@ async function submitInspection() {
             );
           }),
           new Promise((_, rej) =>
-            setTimeout(() => rej(new Error('PROBE_TIMEOUT')), 8000)
+            setTimeout(() => rej(new Error('PROBE_TIMEOUT')), probeTimeoutMs)
           )
         ]);
       } catch(probeErr) {
         if (probeErr.message === 'PROBE_TIMEOUT') {
-          throw Object.assign(new Error('FIRESTORE_UNREACHABLE'), { _isProbe: true });
+          // On mobile, a probe timeout likely means slow network — still attempt the write
+          // instead of giving up, since the write has its own 20s timeout as a safety net.
+          if (isMobile) {
+            addLog && addLog('⚠️ Probe slow on mobile — attempting write anyway...', 'warn');
+          } else {
+            throw Object.assign(new Error('FIRESTORE_UNREACHABLE'), { _isProbe: true });
+          }
+        } else if (probeErr.code === 'permission-denied') {
+          // permission-denied on read → will also fail on write, throw immediately
+          throw probeErr;
         }
-        // permission-denied on read → will also fail on write, throw immediately
-        if (probeErr.code === 'permission-denied') throw probeErr;
         // Other probe errors: still attempt the write
       }
 
-      // ── Step 2: The actual write, with 20s timeout ──────────────
+      // ── Step 2: The actual write, with longer timeout on mobile ───
+      const writeTimeoutMs = isMobile ? 30000 : 20000;
       const docRef = await Promise.race([
         fb.addDoc(fb.collection(fb.db, 'inspections'), {
           ...firestoreData,
@@ -4428,7 +4442,7 @@ async function submitInspection() {
           createdAt:    fb.serverTimestamp()
         }),
         new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('WRITE_TIMEOUT')), 20000)
+          setTimeout(() => reject(new Error('WRITE_TIMEOUT')), writeTimeoutMs)
         )
       ]);
 
