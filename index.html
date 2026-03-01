@@ -1751,17 +1751,182 @@ body.is-admin .admin-only { display: inline-flex; }
 ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
 
 /* responsive */
+/* ═══════════════════════════════════════
+   MOBILE RESPONSIVE — TABLET (≤ 900px)
+═══════════════════════════════════════ */
+@media (max-width: 900px) {
+  .main { padding: 20px; }
+  .header { padding: 0 18px; height: 62px; }
+  .statusbar { padding: 5px 18px; font-size: 10.5px; gap: 16px; }
+  .nav { padding: 0 18px; }
+  .kpi-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+  .form-panel { padding: 22px 24px; }
+  .sec-title { font-size: 22px; }
+}
+
+/* ═══════════════════════════════════════
+   MOBILE RESPONSIVE — PHONE (≤ 600px)
+═══════════════════════════════════════ */
 @media (max-width: 600px) {
-  .main { padding: 16px; }
-  .header { padding: 0 16px; }
-  .header-right { gap: 8px; }
-  .form-panel { padding: 18px; }
-  .brand-en { font-size: 14px; }
+  /* ── Layout ── */
+  .main { padding: 12px; }
+
+  /* ── Header ── */
+  .header {
+    padding: 0 12px;
+    height: auto;
+    min-height: 56px;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+  .header-brand { gap: 10px; flex-shrink: 1; min-width: 0; }
+  .gov-seal { width: 38px; height: 38px; font-size: 17px; flex-shrink: 0; }
+  .brand-stack { min-width: 0; }
+  .brand-en { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .brand-ta { display: none; }
+  .brand-sub { display: none; }
+
+  /* ── Header right chips — hide less-important chips, keep officer + net ── */
+  .header-right { gap: 6px; flex-shrink: 0; }
+  .chip-firebase { display: none; }
+  .chip.chip-net { padding: 4px 8px; font-size: 11px; }
+  .chip-admin { padding: 4px 8px; font-size: 11px; }
+  .officer-chip { padding: 4px 8px; font-size: 11px; gap: 5px; }
+  .oc-avatar { width: 22px; height: 22px; font-size: 10px; }
+  #officer-name-header { display: none; } /* show only avatar on very small screens */
+
+  /* ── Status bar — hide on mobile to save space ── */
+  .statusbar { display: none; }
+
+  /* ── Nav tabs ── */
+  .nav {
+    padding: 0 8px;
+    top: 56px;
+    gap: 0;
+  }
+  .nav-tab {
+    padding: 10px 12px;
+    font-size: 12px;
+    letter-spacing: 0;
+    gap: 5px;
+  }
+
+  /* ── KPI grid ── */
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+  .kpi { padding: 14px 14px; }
+  .kpi-value { font-size: 28px; }
+  .kpi-icon { font-size: 22px; margin-bottom: 6px; }
+
+  /* ── Dashboard grid ── */
+  .dash-grid { grid-template-columns: 1fr; gap: 14px; }
   .dash-grid-2col { grid-template-columns: 1fr !important; }
-  .ph-top { flex-direction: column; align-items: center; text-align: center; }
+
+  /* ── Section header ── */
+  .sec-head { margin-bottom: 16px; gap: 10px; }
+  .sec-title { font-size: 20px; }
+  .sec-head .btn { font-size: 12px; padding: 8px 14px; white-space: nowrap; }
+
+  /* ── Cards ── */
+  .card-head { padding: 12px 16px; }
+  .card-body { padding: 14px 16px; }
+
+  /* ── Form ── */
+  .form-banner { padding: 18px 18px; margin-bottom: 16px; }
+  .form-banner h2 { font-size: 19px; }
+  .form-panel { padding: 16px; }
+  .fg-grid-2, .fg-grid-3 { grid-template-columns: 1fr; }
+  .form-section-title { font-size: 12px; }
+  .prio-group { gap: 6px; }
+  .prio-btn { padding: 8px 12px; font-size: 12px; }
+  .btn-submit { font-size: 16px; padding: 13px; }
+
+  /* ── GPS block ── */
+  .gps-row { flex-direction: column; gap: 8px; }
+  .gps-display { min-height: 38px; font-size: 12px; }
+
+  /* ── Toolbar / Records ── */
+  .toolbar { gap: 8px; }
+  .search-wrap { min-width: 100%; order: 1; }
+  .f-sel { width: 100%; font-size: 12px; }
+  .toolbar .btn { width: 100%; justify-content: center; }
+
+  /* ── Table shell — hide less critical columns on mobile ── */
+  .table-shell { font-size: 12px; }
+  .table-shell table th:nth-child(7),
+  .table-shell table td:nth-child(7),
+  .table-shell table th:nth-child(9),
+  .table-shell table td:nth-child(9) { display: none; }
+  .table-shell table th, .table-shell table td { padding: 8px 10px; }
+  #rec-sort-date, #rec-sort-officer, #rec-sort-dept, #rec-sort-prio { min-height: 30px; }
+
+  /* ── Leaderboard / Analytics grid ── */
+  .an-grid { grid-template-columns: 1fr !important; }
+
+  /* ── My Profile hero ── */
+  .ph-top { flex-direction: column; align-items: center; text-align: center; padding: 20px 16px 14px; }
   .ph-dept { justify-content: center; }
-  .myd-grid { grid-template-columns: repeat(2, 1fr); }
+  .ph-name { font-size: 20px; }
+  .ph-avatar { width: 64px; height: 64px; font-size: 24px; }
+  .ph-stats { flex-wrap: wrap; }
+  .phs-item { min-width: 50%; flex: none; padding: 10px 8px; }
+  .phs-num { font-size: 18px; }
+
+  /* ── My dashboard KPI grid ── */
+  .myd-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+
+  /* ── Drawer (drill-down) — full width on mobile ── */
+  .drawer { width: 100vw; }
+  .drawer-body { padding: 16px; }
+  .drawer-head { padding: 16px; }
+
+  /* ── Buttons: make touch targets bigger ── */
+  .btn { min-height: 38px; }
+  .btn-sm { min-height: 32px; }
+
+  /* ── Photo thumbs ── */
+  .photo-thumb { width: 68px; height: 68px; }
+
+  /* ── Sync & Settings panels ── */
+  .sync-grid, .set-grid { grid-template-columns: 1fr !important; }
+
+  /* ── Ticket timeline ── */
+  .tk-event { gap: 10px; }
+  .tk-bubble { padding: 10px 12px; }
+
+  /* ── Map panel: inline-styled grid ── */
+  #page-map [style*="grid-template-columns:1fr 280px"],
+  #page-map [style*="grid-template-columns: 1fr 280px"] {
+    display: block !important;
+  }
+  #page-map [style*="grid-template-columns:1fr 280px"] > *,
+  #page-map [style*="grid-template-columns: 1fr 280px"] > * {
+    width: 100% !important;
+  }
+
+  /* ── Map subtab buttons (inline-styled, override with !important) ── */
+  #map-subtab-map, #map-subtab-tickets {
+    padding: 10px 12px !important;
+    font-size: 12px !important;
+    letter-spacing: 0 !important;
+  }
+
+  /* ── Officer Login Card ── */
+  .ofr-card { max-width: 100%; border-radius: 14px; }
+  .ofr-hero { padding: 20px 20px 16px; }
+  .ofr-body { padding: 18px 18px 22px; }
+  .pin-dot { width: 38px; height: 44px; font-size: 18px; }
+}
+
+/* ═══════════════════════════════════════
+   VERY SMALL PHONES (≤ 380px)
+═══════════════════════════════════════ */
+@media (max-width: 380px) {
+  .main { padding: 10px; }
+  .kpi-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .kpi-value { font-size: 24px; }
+  .nav-tab { padding: 9px 10px; font-size: 11px; }
+  .myd-grid { grid-template-columns: 1fr 1fr; }
+  .form-panel { padding: 12px; }
 }
 </style>
 </head>
