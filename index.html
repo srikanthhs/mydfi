@@ -2414,112 +2414,74 @@ window._drainQueue = function() {
     </div>
   </div>
 
-  <div class="dash-grid">
-    <div>
-      <!-- Recent inspections -->
-      <div class="card" style="margin-bottom:20px">
-        <div class="card-head">
-          <div class="card-title">🕐 Recent Inspections</div>
-          <button class="btn btn-outline btn-sm" onclick="window._d('showPage',['records'])">View All →</button>
-        </div>
-        <div class="card-body" id="recent-list">
-          <div class="empty-state" style="padding:30px">
-            <div class="es-icon">📭</div>
-            <div class="es-title">No inspections yet</div>
-            <div class="es-sub">Start your first field inspection</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Dept bars — horizontal bar chart table -->
-      <div class="card" style="margin-bottom:20px">
-        <div class="card-head">
-          <div class="card-title">🏢 Department Activity</div>
-          <span id="dash-dept-total" style="font-size:12px;color:var(--text-3)"></span>
-        </div>
-        <div class="card-body" id="dept-bars">
-          <div class="empty-state" style="padding:24px">
-            <div class="es-icon" style="font-size:32px">📊</div>
-            <div class="es-sub">Submit inspections to see data</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Remarks / Observations Table -->
-      <div class="card" style="margin-bottom:20px">
-        <div class="card-head" style="background:linear-gradient(90deg,#EFF6FF,#FFF)">
-          <div class="card-title">📝 Inspection Remarks &amp; Observations</div>
-          <span id="dash-remarks-count" style="font-size:12px;color:var(--text-3)"></span>
-        </div>
-        <div id="dash-remarks-table">
-          <div class="empty-state" style="padding:24px">
-            <div class="es-icon" style="font-size:32px">💬</div>
-            <div class="es-sub">Submit inspections to see remarks</div>
-          </div>
-        </div>
-        <div class="pagination-bar" id="remarks-pg-bar" style="display:none;padding:10px 16px;border-top:1px solid var(--border)">
-          <span id="remarks-pg-info" style="font-size:12px;color:var(--text-3)"></span>
-          <div class="page-btns" id="remarks-pg-btns"></div>
-        </div>
-      </div>
-
-      <!-- Absent Officers Report -->
-      <div class="card" style="margin-top:20px">
-        <div class="card-head">
-          <div class="card-title">🚫 Officers Not Inspected</div>
-          <span style="font-size:11px;color:var(--text-3)">Filter by date range</span>
-        </div>
-        <div class="card-body">
-          <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px">
-            <div style="flex:1;min-width:130px">
-              <label style="font-size:11px;font-weight:600;color:var(--text-3);display:block;margin-bottom:4px">From Date</label>
-              <input type="date" id="absent-from" class="inp" style="font-size:13px">
-            </div>
-            <div style="flex:1;min-width:130px">
-              <label style="font-size:11px;font-weight:600;color:var(--text-3);display:block;margin-bottom:4px">To Date</label>
-              <input type="date" id="absent-to" class="inp" style="font-size:13px">
-            </div>
-            <button class="btn btn-primary btn-sm" onclick="renderAbsentOfficers()" style="padding:9px 16px;white-space:nowrap">🔍 Check</button>
-            <button class="btn btn-jade btn-sm" onclick="exportAbsentOfficers()" style="padding:9px 16px;white-space:nowrap">⬇️ Export</button>
-          </div>
-          <div id="absent-officers-result">
-            <div style="text-align:center;padding:20px;color:var(--text-3);font-size:13px">Select a date range and click Check</div>
-          </div>
-        </div>
+  <!-- Recent inspections -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-head">
+      <div class="card-title">🕐 Recent Inspections</div>
+      <button class="btn btn-outline btn-sm" onclick="window._d('showPage',['records'])">View All →</button>
+    </div>
+    <div class="card-body" id="recent-list">
+      <div class="empty-state" style="padding:30px">
+        <div class="es-icon">📭</div>
+        <div class="es-title">No inspections yet</div>
+        <div class="es-sub">Start your first field inspection</div>
       </div>
     </div>
+  </div>
 
-    <div>
-      <!-- Map -->
-      <div class="card" style="margin-bottom:20px;overflow:hidden">
-        <div class="card-head" style="padding:12px 18px">
-          <div class="card-title">🗺 Live Inspection Map</div>
-          <button class="btn btn-outline btn-sm" onclick="window._d('showPage',['map'])">Full Map →</button>
-        </div>
-        <div id="dash-gmap" style="height:240px;width:100%;background:#e8e8e0;position:relative;z-index:1">
-        </div>
+  <!-- Dept bars — horizontal bar chart -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-head">
+      <div class="card-title">🏢 Department Activity</div>
+      <span id="dash-dept-total" style="font-size:12px;color:var(--text-3)"></span>
+    </div>
+    <div class="card-body" id="dept-bars">
+      <div class="empty-state" style="padding:24px">
+        <div class="es-icon" style="font-size:32px">📊</div>
+        <div class="es-sub">Submit inspections to see data</div>
       </div>
+    </div>
+  </div>
 
-      <!-- Quick actions -->
-      <div class="card">
-        <div class="card-head"><div class="card-title">⚡ Quick Actions</div></div>
-        <div class="card-body quick-actions">
-          <button class="btn btn-primary" style="width:100%;justify-content:center;padding:13px" onclick="window._d('showPage',['form'])">
-            ➕ New Field Inspection
-          </button>
-          <button class="btn btn-secondary" style="width:100%;justify-content:center;padding:11px" onclick="window._d('syncNow')">
-            ☁️ Push Sync to Firebase
-          </button>
-          <button class="btn btn-jade" style="width:100%;justify-content:center;padding:11px" onclick="window._d('showPage',['download'])">
-            ⬇️ Download Records
-          </button>
-          <button class="btn btn-sky" style="width:100%;justify-content:center;padding:11px" onclick="window._d('showPage',['analytics'])">
-            📈 View Analytics
-          </button>
-          <button class="btn" style="width:100%;justify-content:center;padding:11px;background:linear-gradient(135deg,var(--sky),#0E85CC);color:white" onclick="window._d('showPage',['coordination'])">
-            🔗 Coordination Tracker
-          </button>
+  <!-- Remarks / Observations Table -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-head" style="background:linear-gradient(90deg,#EFF6FF,#FFF)">
+      <div class="card-title">📝 Inspection Remarks &amp; Observations</div>
+      <span id="dash-remarks-count" style="font-size:12px;color:var(--text-3)"></span>
+    </div>
+    <div id="dash-remarks-table">
+      <div class="empty-state" style="padding:24px">
+        <div class="es-icon" style="font-size:32px">💬</div>
+        <div class="es-sub">Submit inspections to see remarks</div>
+      </div>
+    </div>
+    <div class="pagination-bar" id="remarks-pg-bar" style="display:none;padding:10px 16px;border-top:1px solid var(--border)">
+      <span id="remarks-pg-info" style="font-size:12px;color:var(--text-3)"></span>
+      <div class="page-btns" id="remarks-pg-btns"></div>
+    </div>
+  </div>
+
+  <!-- Absent Officers Report -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-head">
+      <div class="card-title">🚫 Officers Not Inspected</div>
+      <span style="font-size:11px;color:var(--text-3)">Filter by date range</span>
+    </div>
+    <div class="card-body">
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px">
+        <div style="flex:1;min-width:130px">
+          <label style="font-size:11px;font-weight:600;color:var(--text-3);display:block;margin-bottom:4px">From Date</label>
+          <input type="date" id="absent-from" class="inp" style="font-size:13px">
         </div>
+        <div style="flex:1;min-width:130px">
+          <label style="font-size:11px;font-weight:600;color:var(--text-3);display:block;margin-bottom:4px">To Date</label>
+          <input type="date" id="absent-to" class="inp" style="font-size:13px">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="renderAbsentOfficers()" style="padding:9px 16px;white-space:nowrap">🔍 Check</button>
+        <button class="btn btn-jade btn-sm" onclick="exportAbsentOfficers()" style="padding:9px 16px;white-space:nowrap">⬇️ Export</button>
+      </div>
+      <div id="absent-officers-result">
+        <div style="text-align:center;padding:20px;color:var(--text-3);font-size:13px">Select a date range and click Check</div>
       </div>
     </div>
   </div>
