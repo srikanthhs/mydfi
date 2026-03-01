@@ -1077,8 +1077,9 @@ label .req { color: var(--crimson); }
   cursor: pointer;
   transition: all .2s;
   background: var(--cream);
+  display: block;
 }
-.photo-zone:hover { border-color: var(--saffron); background: var(--saffron-pale); }
+.photo-zone:hover, label.photo-zone:hover { border-color: var(--saffron); background: var(--saffron-pale); }
 .photo-zone .pz-icon { font-size: 30px; margin-bottom: 8px; }
 .photo-zone p { font-size: 13px; color: var(--text-3); }
 .photo-zone strong { color: var(--saffron); }
@@ -2702,14 +2703,53 @@ window._drainQueue = function() {
     <!-- Photos -->
     <div class="fg" style="margin-bottom:22px">
       <label>📷 Site Photos <span class="req">*</span> <span style="font-weight:400;color:var(--text-3);font-size:11px">(at least 1 required, max 5)</span></label>
-      <div class="photo-zone" onclick="document.getElementById('photo-inp').click()">
+
+      <!-- 
+        Mobile photo strategy:
+        • Use <label for="..."> so the file picker opens on direct user gesture (bypasses iOS/Android blocking)
+        • Two inputs: one with capture="environment" (live camera) and one without (gallery)
+        • Both write to the same addPhotos handler
+      -->
+
+      <!-- Tappable photo zone — acts as label for the gallery input -->
+      <label for="photo-inp-gallery" class="photo-zone" style="cursor:pointer;display:block">
         <div class="pz-icon">📸</div>
-        <p><strong>Camera or Gallery</strong> — tap to take a photo or choose from gallery</p>
-        <p>JPG, PNG — auto-compressed for fast sync · max 5 photos</p>
+        <p><strong>Tap here</strong> — choose from gallery or camera roll</p>
+        <p>JPG, PNG — auto-compressed · max 5 photos</p>
+      </label>
+
+      <!-- Hidden gallery input (no capture attr → shows gallery + camera option on Android, gallery only on iOS) -->
+      <input type="file" id="photo-inp-gallery" multiple accept="image/*"
+             style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none"
+             onchange="addPhotos(this)">
+
+      <!-- Explicit "Take Photo" button using capture=environment → opens camera directly -->
+      <input type="file" id="photo-inp-camera" accept="image/*" capture="environment"
+             style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none"
+             onchange="addPhotos(this)">
+
+      <!-- Action buttons row for mobile -->
+      <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
+        <label for="photo-inp-camera"
+               style="flex:1;min-width:120px;display:inline-flex;align-items:center;justify-content:center;gap:7px;
+                      padding:10px 16px;background:var(--ink);color:white;border-radius:9px;cursor:pointer;
+                      font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;letter-spacing:.4px;
+                      transition:.2s;user-select:none;border:2px solid var(--ink)"
+               onmouseenter="this.style.background='var(--saffron)';this.style.borderColor='var(--saffron)'"
+               onmouseleave="this.style.background='var(--ink)';this.style.borderColor='var(--ink)'">
+          📷 Take Photo
+        </label>
+        <label for="photo-inp-gallery"
+               style="flex:1;min-width:120px;display:inline-flex;align-items:center;justify-content:center;gap:7px;
+                      padding:10px 16px;background:white;color:var(--ink);border-radius:9px;cursor:pointer;
+                      font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;letter-spacing:.4px;
+                      transition:.2s;user-select:none;border:2px solid var(--border)"
+               onmouseenter="this.style.borderColor='var(--saffron)';this.style.color='var(--saffron)'"
+               onmouseleave="this.style.borderColor='var(--border)';this.style.color='var(--ink)'">
+          🖼 Choose from Gallery
+        </label>
       </div>
-      <input type="file" id="photo-inp" multiple accept="image/*" style="display:none" onchange="addPhotos(this)">
-      <!-- Note: capture="environment" removed — it blocks gallery access on some Android phones
-           and causes sync failures when camera intent crashes. Users can still shoot live. -->
+
       <div class="photo-thumbs" id="photo-thumbs"></div>
     </div>
 
@@ -3630,12 +3670,12 @@ window._drainQueue = function() {
               <th style="background:var(--ink);color:white;padding:12px 14px;text-align:left;font-size:11px;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap">Rank</th>
               <th style="background:var(--ink);color:white;padding:12px 14px;text-align:left;font-size:11px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;user-select:none" onclick="lbSortOfficer('name')" title="Sort by name">Officer <span id="lb-o-sort-name" style="opacity:.5">⇅</span></th>
               <th style="background:var(--ink);color:white;padding:12px 14px;text-align:left;font-size:11px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;user-select:none" onclick="lbSortOfficer('dept')" title="Sort by department">Department <span id="lb-o-sort-dept" style="opacity:.5">⇅</span></th>
-              <th style="background:var(--ink);color:white;padding:12px 14px;text-align:center;font-size:11px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;user-select:none" onclick="lbSortOfficer('total')" title="Sort by total">Total <span id="lb-o-sort-total" style="opacity:.5">⇅</span></th>
+              <th style="background:var(--ink);color:white;padding:12px 14px;text-align:center;font-size:11px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;user-select:none" onclick="lbSortOfficer('total')" title="Sort by total">Total <span id="lb-o-sort-total">↓</span></th>
               <th style="background:var(--ink);color:white;padding:12px 14px;text-align:center;font-size:11px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;user-select:none" onclick="lbSortOfficer('urgent')" title="Sort by urgent">🔴 Urgent <span id="lb-o-sort-urgent" style="opacity:.5">⇅</span></th>
               <th style="background:var(--ink);color:white;padding:12px 14px;text-align:center;font-size:11px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;user-select:none" onclick="lbSortOfficer('high')" title="Sort by high">🟠 High <span id="lb-o-sort-high" style="opacity:.5">⇅</span></th>
               <th style="background:var(--ink);color:white;padding:12px 14px;text-align:center;font-size:11px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;user-select:none" onclick="lbSortOfficer('gps')" title="Sort by GPS">📍 GPS <span id="lb-o-sort-gps" style="opacity:.5">⇅</span></th>
               <th style="background:var(--ink);color:white;padding:12px 14px;text-align:center;font-size:11px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;user-select:none" onclick="lbSortOfficer('photos')" title="Sort by inspections with photos">📷 With Photo <span id="lb-o-sort-photos" style="opacity:.5">⇅</span></th>
-              <th style="background:var(--ink);color:white;padding:12px 14px;text-align:center;font-size:11px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;user-select:none" onclick="lbSortOfficer('score')" title="Sort by score">🏅 Score <span id="lb-o-sort-score">↓</span></th>
+              <th style="background:var(--ink);color:white;padding:12px 14px;text-align:center;font-size:11px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;user-select:none" onclick="lbSortOfficer('score')" title="Sort by score">🏅 Score <span id="lb-o-sort-score" style="opacity:.5">⇅</span></th>
               <th style="background:var(--ink);color:white;padding:12px 14px;text-align:left;font-size:11px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;user-select:none" onclick="lbSortOfficer('last')" title="Sort by last active">Last Active <span id="lb-o-sort-last" style="opacity:.5">⇅</span></th>
             </tr>
           </thead>
@@ -3667,13 +3707,13 @@ window._drainQueue = function() {
             <tr>
               <th style="background:var(--ink);color:white;padding:12px 14px;text-align:left;font-size:11px;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap">Rank</th>
               <th style="background:var(--ink);color:white;padding:12px 14px;text-align:left;font-size:11px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;user-select:none" onclick="lbSortDept('dept')" title="Sort by department">Department <span id="lb-d-sort-dept" style="opacity:.5">⇅</span></th>
-              <th style="background:var(--ink);color:white;padding:12px 14px;text-align:center;font-size:11px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;user-select:none" onclick="lbSortDept('total')" title="Sort by total">Total <span id="lb-d-sort-total" style="opacity:.5">⇅</span></th>
+              <th style="background:var(--ink);color:white;padding:12px 14px;text-align:center;font-size:11px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;user-select:none" onclick="lbSortDept('total')" title="Sort by total">Total <span id="lb-d-sort-total">↓</span></th>
               <th style="background:var(--ink);color:white;padding:12px 14px;text-align:center;font-size:11px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;user-select:none" onclick="lbSortDept('officers')" title="Sort by officers">Officers <span id="lb-d-sort-officers" style="opacity:.5">⇅</span></th>
               <th style="background:var(--ink);color:white;padding:12px 14px;text-align:center;font-size:11px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;user-select:none" onclick="lbSortDept('urgent')" title="Sort by urgent">🔴 Urgent <span id="lb-d-sort-urgent" style="opacity:.5">⇅</span></th>
               <th style="background:var(--ink);color:white;padding:12px 14px;text-align:center;font-size:11px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;user-select:none" onclick="lbSortDept('coord')" title="Sort by coordination">🔗 Coord <span id="lb-d-sort-coord" style="opacity:.5">⇅</span></th>
               <th style="background:var(--ink);color:white;padding:12px 14px;text-align:center;font-size:11px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;user-select:none" onclick="lbSortDept('gps')" title="Sort by GPS%">📍 GPS% <span id="lb-d-sort-gps" style="opacity:.5">⇅</span></th>
               <th style="background:var(--ink);color:white;padding:12px 14px;text-align:center;font-size:11px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;user-select:none" onclick="lbSortDept('sync')" title="Sort by sync%">☁️ Sync% <span id="lb-d-sort-sync" style="opacity:.5">⇅</span></th>
-              <th style="background:var(--ink);color:white;padding:12px 14px;text-align:center;font-size:11px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;user-select:none" onclick="lbSortDept('score')" title="Sort by score">🏅 Score <span id="lb-d-sort-score">↓</span></th>
+              <th style="background:var(--ink);color:white;padding:12px 14px;text-align:center;font-size:11px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;user-select:none" onclick="lbSortDept('score')" title="Sort by score">🏅 Score <span id="lb-d-sort-score" style="opacity:.5">⇅</span></th>
               <th style="background:var(--ink);color:white;padding:12px 14px;text-align:left;font-size:11px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;user-select:none" onclick="lbSortDept('last')" title="Sort by last active">Last Active <span id="lb-d-sort-last" style="opacity:.5">⇅</span></th>
             </tr>
           </thead>
@@ -4917,7 +4957,12 @@ async function addPhotos(inp) {
   }
 
   if (zone) zone.textContent = origText;
+  // Reset both inputs so the same file can be re-selected if needed
   inp.value = '';
+  const other = inp.id === 'photo-inp-camera'
+    ? document.getElementById('photo-inp-gallery')
+    : document.getElementById('photo-inp-camera');
+  if (other) other.value = '';
 
   const kb = photoDataURLs.reduce((s, d) => s + Math.round((d.length * 3) / (4 * 1024)), 0);
   toast(`📷 ${photoFiles.length} photo(s) ready — ${kb} KB total`, 'success');
@@ -5010,7 +5055,7 @@ async function submitInspection() {
   // At least one photo is mandatory
   if (!photoFiles.length) {
     toast('📷 At least one photo is required for field inspection', 'warn');
-    document.getElementById('photo-inp')?.scrollIntoView({ behavior:'smooth', block:'center' });
+    document.getElementById('photo-inp-gallery')?.scrollIntoView({ behavior:'smooth', block:'center' });
     return;
   }
 
@@ -9152,9 +9197,9 @@ function buildPhotoThumbs(record, containerId) {
 /* ═══════════════════════════════════════════════════════════
    🏆  LEADERBOARD — enhanced interactivity & filters
 ═══════════════════════════════════════════════════════════ */
-let _lbOfficerSort = 'score'; // 'score'|'total'|'urgent'|'gps'|'last'
-let _lbOfficerDir  = -1;       // -1 = desc, 1 = asc
-let _lbDeptSort    = 'score';
+let _lbOfficerSort = 'total'; // default: most visits first
+let _lbOfficerDir  = -1;       // -1 = desc (most → least)
+let _lbDeptSort    = 'total';  // dept leaderboard also by total
 let _lbDeptDir     = -1;
 let _lbOfficerSearch = '';
 let _lbDeptFilter = '';
