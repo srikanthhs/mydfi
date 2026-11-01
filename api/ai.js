@@ -19,7 +19,7 @@ const PROMPTS = {
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   const key = process.env.GEMINI_API_KEY;
-  if (!key) return res.status(503).json({ error: 'AI is not set up yet (GEMINI_API_KEY missing on Vercel).' });
+  if (!key) return res.status(503).json({ error: `AI is not set up yet: GEMINI_API_KEY is missing for the ${process.env.VERCEL_ENV || 'current'} environment on Vercel.` });
 
   let body = req.body;
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch (_) { body = {}; } }
