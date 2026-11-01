@@ -16,8 +16,21 @@ const PROMPTS = {
     'You write for the District Collector\'s office, Mayiladuthurai District, Tamil Nadu.\n' +
     'From last week\'s field inspection data below, write a short summary in simple English: ' +
     'one line on overall activity, then the top 3 problems seen (with places), then which places need a revisit. ' +
-    'Use only the data given; do not invent numbers or places. Plain text, short lines starting with "• " for the lists, no markdown, under 120 words.\n\nData:\n' + text
+    'Use only the data given; do not invent numbers or places. Plain text, short lines starting with "• " for the lists, no markdown, under 120 words.\n\nData:\n' + text,
+  agenda: text =>
+    'You prepare the agenda for the District Collector\'s monthly review meeting with Heads of Departments (HODs), Mayiladuthurai District, Tamil Nadu.\n' +
+    'From the field inspection facts below, write ACTIONABLE agenda points, grouped by department, most serious departments first.\n' +
+    'Rules:\n' +
+    '- Use ONLY the facts given. Never invent places, numbers, names or issues.\n' +
+    '- Each item: the problem in one short line, the place, days pending (number from the facts, or "-"), a concrete action the HOD must take, who is responsible (e.g. "HOD, <department>", or the other department involved), and a deadline date (YYYY-MM-DD) counted from Today: overdue or urgent = 7 days, high = 15 days, others = 30 days.\n' +
+    '- Put overdue issues first. Merge duplicates. At most 6 items per department, at most 15 departments.\n' +
+    '- In "general", list short cross-cutting points (e.g. departments with no field visits, repeated problems across villages). At most 6.\n' +
+    '- Write all text values in the LANGUAGE given at the top (Tamil or English). Keep place and department names as given.\n' +
+    'Reply with JSON only, exactly this shape:\n' +
+    '{"title": string, "summary": string (one or two sentences), "departments": [{"name": string, "items": [{"issue": string, "place": string, "days_pending": string, "action": string, "responsible": string, "deadline": string}]}], "general": [string]}\n\nFacts:\n' + text
 };
+const JSON_TASKS = { agenda: true };
+const TRY_MS_BY_TASK = { agenda: 28000 };
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
@@ -27,21 +40,21 @@ module.exports = async (req, res) => {
   let body = req.body;
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch (_) { body = {}; } }
   const task = body && body.task;
-  const text = String((body && body.text) || '').trim().slice(0, 12000);
+  const text = String((body && body.text) || '').trim().slice(0, 24000);
   if (!PROMPTS[task] || !text) return res.status(400).json({ error: 'Nothing to send.' });
 
   try {
     let r, j, model;
     for (model of MODELS) {
       const ctl = new AbortController();
-      const timer = setTimeout(() => ctl.abort(), TRY_MS);
+      const timer = setTimeout(() => ctl.abort(), TRY_MS_BY_TASK[task] || TRY_MS);
       try {
       r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
         body: JSON.stringify({
           contents: [{ role: 'user', parts: [{ text: PROMPTS[task](text) }] }],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 2048 }
+          generationConfig: Object.assign({ temperature: 0.3, maxOutputTokens: JSON_TASKS[task] ? 8192 : 2048 }, JSON_TASKS[task] ? { responseMimeType: 'application/json' } : {})
         }),
         signal: ctl.signal
       });
