@@ -2559,6 +2559,8 @@ body:not([data-page="form"]) .nf-submit { display: none; }
 #hod-agenda ul { margin: 4px 0 8px 18px; padding: 0; }
 .hod-acts { display: flex; gap: 10px; margin-top: 12px; align-items: center; }
 .hod-acts .wk-go { flex: 1; }
+.hod-acts a.ai-btn { text-decoration: none; }
+.hod-acts + .hod-acts { margin-top: 8px; flex-wrap: wrap; }
 /* Admin: close stale issues */
 .bulk-close { display: flex; align-items: center; gap: 12px; padding: 12px 14px; margin-bottom: 14px; border-radius: 12px; background: var(--c-surface-2, #F1F3F4); font-size: 13px; color: var(--c-text, #202124); }
 .bulk-close[hidden] { display: none; }
@@ -10682,6 +10684,35 @@ async function aiHodAgenda() {
   }
 }
 
+// Turn the (possibly edited) agenda into minutes-style lines the HOD Action Tracker's "Import minutes" tab reads
+function hodTrackerText() {
+  const box = document.getElementById('hod-agenda');
+  const dmyOf = v => { const m = String(v || '').match(/(\d{4})-(\d{2})-(\d{2})/); return m ? `${m[3]}.${m[2]}.${m[1]}` : String(v || '').trim(); };
+  const lines = [`HOD Review Meeting – action points from field inspections (Field Visits app), ${dmyOf(ymd(new Date()))}`, ''];
+  let dept = '', n = 0;
+  box.querySelectorAll('h3, tr').forEach(el => {
+    if (el.tagName === 'H3') { dept = el.textContent.replace(/\s*\(\d+\)\s*$/, '').trim(); return; }
+    const td = [...el.querySelectorAll('td')].map(c => c.textContent.replace(/\s+/g, ' ').trim());
+    if (td.length < 6) return;
+    const [issue, place, pending, action, resp, due] = td;
+    n++;
+    lines.push(`${dept}: ${action.replace(/\.$/, '')} – ${issue.replace(/^\d+\.\s*/, '').replace(/\.$/, '')}${place && place !== '-' ? ` at ${place}` : ''}${pending && pending !== '-' ? ` (pending ${pending} days)` : ''}. Responsible: ${resp}. Target date: ${dmyOf(due)}.`);
+  });
+  box.querySelectorAll('li').forEach(li => lines.push(`General: ${li.textContent.trim()}`));
+  return { text: lines.join('\n'), n };
+}
+
+async function copyHodForTracker() {
+  const { text, n } = hodTrackerText();
+  if (!n) { toast('Write the agenda first', 'warn'); return; }
+  try { await navigator.clipboard.writeText(text); }
+  catch (_) {
+    const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch (__) {} ta.remove();
+  }
+  toast(`📋 ${n} action points copied. In Action Tracker, open "Import minutes" and paste.`, 'success');
+}
+
 function printHodAgenda() {
   const body = document.getElementById('hod-agenda').innerHTML;
   const w = window.open('', '_blank');
@@ -10951,7 +10982,7 @@ var TA = {
   'Admin Access Control': 'நிர்வாகி அணுகல்', 'Admin Password': 'நிர்வாகி கடவுச்சொல்', 'Login as Admin': 'நிர்வாகியாக உள்நுழை',
   'Data Management': 'தரவு மேலாண்மை', 'Download All Records': 'அனைத்தையும் பதிவிறக்கு', 'Push Sync': 'ஒத்திசை',
   'Clear Local Data': 'இந்தப் போனில் உள்ள தரவை அழி',
-  'Clean up with AI': 'AI மூலம் சீராக்கு', 'Write agenda': 'நிகழ்ச்சி நிரல் எழுது', 'Write again': 'மீண்டும் எழுது', 'Writing agenda…': 'எழுதுகிறது…',
+  'Clean up with AI': 'AI மூலம் சீராக்கு', 'Copy for Action Tracker': 'Action Tracker-க்கு நகலெடு', 'Open Action Tracker': 'Action Tracker திற', 'Write agenda': 'நிகழ்ச்சி நிரல் எழுது', 'Write again': 'மீண்டும் எழுது', 'Writing agenda…': 'எழுதுகிறது…',
   'Tap any text to edit it before downloading.': 'பதிவிறக்கும் முன் எந்த உரையையும் தொட்டு திருத்தலாம்.', 'Undo': 'பழையபடி', 'Write AI summary': 'AI சுருக்கம் எழுது',
   'Cleaning up…': 'சீராக்குகிறது…', 'Writing summary…': 'சுருக்கம் எழுதுகிறது…', 'Your full name': 'உங்கள் முழுப் பெயர்'
 };
@@ -11081,6 +11112,10 @@ window.addEventListener('DOMContentLoaded', () => {
         <div class="hod-acts">
           <button type="button" class="wk-go" onclick="printHodAgenda()">Download PDF</button>
           <button type="button" class="ai-btn" onclick="aiHodAgenda()">↻ <span>Write again</span></button>
+        </div>
+        <div class="hod-acts">
+          <button type="button" class="ai-btn" onclick="copyHodForTracker()">📋 <span>Copy for Action Tracker</span></button>
+          <a class="ai-btn" href="https://claude.ai/artifact/LzNvT7UNNcG3zDHzv4qBpD" target="_blank" rel="noopener">↗ <span>Open Action Tracker</span></a>
         </div>
       </div>
     </div>
