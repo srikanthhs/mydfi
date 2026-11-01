@@ -2540,6 +2540,25 @@ body:not([data-page="form"]) .nf-submit { display: none; }
 .ai-btn[hidden], .ai-undo[hidden], #wk-ai[hidden] { display: none !important; }
 .wk-ai-btn { width: 100%; justify-content: center; margin-bottom: 8px; }
 #wk-ai { white-space: pre-line; font-size: 13px; line-height: 1.55; color: var(--c-text, #202124); background: var(--c-surface-2, #F1F3F4); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
+/* HOD meeting agenda */
+.hod-modal { max-width: 760px; width: calc(100% - 24px); max-height: 92vh; overflow: auto; }
+.hod-modal .modal-head { display: flex; align-items: center; justify-content: space-between; }
+.hod-x { border: none; background: none; font-size: 18px; cursor: pointer; color: var(--c-text-2, #5F6368); }
+.hod-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.hod-opts label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--c-text-2, #5F6368); }
+.hod-opts .sel { width: 100%; }
+.hod-facts { font-size: 13px; color: var(--c-text-2, #5F6368); background: var(--c-surface-2, #F1F3F4); border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; }
+.hod-tip { font-size: 12px; color: var(--c-text-2, #5F6368); margin: 14px 0 6px; }
+#hod-out[hidden] { display: none !important; }
+#hod-agenda { border: 1px dashed var(--c-line, #DADCE0); border-radius: 10px; padding: 12px; font-size: 13px; line-height: 1.5; color: var(--c-text, #202124); outline: none; overflow-x: auto; }
+#hod-agenda h3 { font-size: 15px; margin: 14px 0 6px; color: var(--c-primary, #1A73E8); }
+#hod-agenda h3:first-child { margin-top: 0; }
+#hod-agenda table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+#hod-agenda th, #hod-agenda td { border: 1px solid var(--c-line, #DADCE0); padding: 6px 8px; text-align: left; vertical-align: top; }
+#hod-agenda th { background: var(--c-surface-2, #F1F3F4); font-size: 12px; }
+#hod-agenda ul { margin: 4px 0 8px 18px; padding: 0; }
+.hod-acts { display: flex; gap: 10px; margin-top: 12px; align-items: center; }
+.hod-acts .wk-go { flex: 1; }
 /* Admin: close stale issues */
 .bulk-close { display: flex; align-items: center; gap: 12px; padding: 12px 14px; margin-bottom: 14px; border-radius: 12px; background: var(--c-surface-2, #F1F3F4); font-size: 13px; color: var(--c-text, #202124); }
 .bulk-close[hidden] { display: none; }
@@ -3816,6 +3835,11 @@ window._drainQueue = function() {
       <div style="color:var(--c-text-3);font-size:13px">Uses the filters above</div>
     </div>
     <div class="report-list">
+      <button class="report-row featured" onclick="openHodAgenda()">
+        <span class="report-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h10M9 12h10M9 19h10M4 5h.01M4 12h.01M4 19h.01"/></svg></span>
+        <span class="report-txt"><b>✨ HOD meeting agenda</b><span>AI writes action points for each department from visits and open issues</span></span>
+        <span class="report-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+      </button>
       <button class="report-row featured" onclick="generateReport('comprehensive','pdf')">
         <span class="report-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V10l7-5 7 5v11M9 21v-6h6v6"/></svg></span>
         <span class="report-txt"><b>Full district report</b><span>Officers, departments, villages and issues in one PDF</span></span>
@@ -10471,10 +10495,10 @@ function dismissWeeklyCard(key) {
 }
 
 // ── AI helpers (Gemini via /api/ai; the key stays on Vercel) ──────────────────
-async function callAI(task, text) {
+async function callAI(task, text, waitMs) {
   if (!navigator.onLine) throw new Error('AI needs internet. Try again when online.');
   const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), 45000);
+  const timer = setTimeout(() => ctl.abort(), waitMs || 45000);
   let r;
   try { r = await fetch('/api/ai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ task, text }), signal: ctl.signal }); }
   catch (e) { throw new Error(e.name === 'AbortError' ? 'AI took too long to answer. Try again.' : 'Could not reach the AI service.'); }
@@ -10539,6 +10563,117 @@ async function aiWeeklySummary() {
     showWeeklyAI(out);
   } catch (e) { toast('⚠️ ' + e.message, 'warn'); }
   finally { btn.disabled = false; btn.innerHTML = label; if (typeof translateNode === 'function') translateNode(btn); }
+}
+
+// ── HOD meeting agenda (AI) ───────────────────────────────────────────────────
+const HOD_OPEN = c => c.status !== 'resolved' && c.status !== 'closed';
+const hodDaysOld = d => Math.max(0, Math.floor((Date.now() - new Date(d)) / 864e5));
+const hodShort = (t, n) => { t = String(t || '').replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n) + '…' : t; };
+
+function openHodAgenda() {
+  const depts = [...new Set(APP.records.map(r => r.department).concat(getCoordCases().map(c => c.sourceDept)).filter(Boolean))].sort();
+  const sel = document.getElementById('hod-dept');
+  sel.innerHTML = '<option value="">All departments</option>' + depts.map(d => `<option>${esc(d)}</option>`).join('');
+  ['hod-days', 'hod-dept'].forEach(id => document.getElementById(id).onchange = hodShowFacts);
+  hodShowFacts();
+  document.getElementById('hod-bg').classList.add('open');
+}
+function closeHodAgenda() { document.getElementById('hod-bg').classList.remove('open'); }
+
+function hodCollect() {
+  const days = parseInt(document.getElementById('hod-days').value, 10) || 30;
+  const only = document.getElementById('hod-dept').value;
+  const from = new Date(Date.now() - days * 864e5);
+  const inDept = d => !only || d === only;
+  const recs = APP.records.filter(r => new Date(r.createdAt || r.datetime) >= from && inDept(r.department));
+  const cases = getCoordCases().filter(c => HOD_OPEN(c) && (!only || c.sourceDept === only || (c.concernedDepts || []).includes(only)));
+  const allDepts = [...new Set(APP.records.map(r => r.department).filter(Boolean))];
+  const byDept = {};
+  const D = name => (byDept[name] = byDept[name] || { visits: 0, officers: new Set(), urgent: [], places: {}, issues: [] });
+  recs.forEach(r => {
+    const d = D(r.department || 'Other');
+    d.visits++; if (r.officerName) d.officers.add(r.officerName);
+    if (r.priority === 'urgent' || r.priority === 'high' || r.coordRequired) d.urgent.push(r);
+    const place = (r.location || r.block || '').trim().toLowerCase();
+    if (place) (d.places[place] = d.places[place] || []).push(r);
+  });
+  cases.forEach(c => {
+    const owners = [c.sourceDept].concat(c.concernedDepts || []).filter(Boolean).filter(inDept);
+    (owners.length ? [owners[0]] : ['Other']).forEach(o => D(o).issues.push(c));
+  });
+  const silent = only ? (recs.length ? [] : [only]) : allDepts.filter(d => !recs.some(r => r.department === d));
+  return { days, only, from, recs, cases, byDept, silent };
+}
+
+function hodShowFacts() {
+  const f = hodCollect();
+  const overdue = f.cases.filter(coordIsOverdue).length;
+  document.getElementById('hod-facts').innerHTML =
+    `From <b>${f.from.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</b>: <b>${f.recs.length}</b> visits, <b>${f.cases.length}</b> open issues (<b>${overdue}</b> overdue)` +
+    (f.silent.length ? `, <b>${f.silent.length}</b> department(s) with no visits` : '') + '.';
+  document.getElementById('hod-out').hidden = true;
+}
+
+function hodFactsText(f) {
+  const lines = [`Today: ${ymd(new Date())}`, `Period: last ${f.days} days (from ${ymd(f.from)})`, `Departments covered: ${f.only || 'all'}`, ''];
+  Object.entries(f.byDept).sort((a, b) => (b[1].issues.length + b[1].urgent.length) - (a[1].issues.length + a[1].urgent.length)).slice(0, 25).forEach(([name, d]) => {
+    lines.push(`## ${name}: ${d.visits} visits by ${d.officers.size} officers, ${d.issues.length} open issues`);
+    d.issues.sort((a, b) => hodDaysOld(b.createdAt) - hodDaysOld(a.createdAt)).slice(0, 8).forEach(c =>
+      lines.push(`- OPEN ISSUE: ${hodShort(c.title, 140)} | place: ${c.location || '-'} | pending ${hodDaysOld(c.createdAt)} days${coordIsOverdue(c) ? ' (OVERDUE)' : ''} | priority ${c.priority || 'medium'} | depts involved: ${[c.sourceDept].concat(c.concernedDepts || []).filter(Boolean).join(', ')}${c.dueDate ? ' | due ' + c.dueDate : ''}${c.notes ? ' | notes: ' + hodShort(c.notes, 100) : ''}`));
+    d.urgent.slice(0, 5).forEach(r =>
+      lines.push(`- URGENT/HIGH VISIT: ${hodShort(r.remarks, 160)} | place: ${r.location || r.block || '-'} | ${hodDaysOld(r.createdAt || r.datetime)} days ago | officer ${r.officerName || '-'}`));
+    Object.values(d.places).filter(v => v.length >= 2).slice(0, 3).map(v => v.slice().sort((a, b) => new Date(b.createdAt || b.datetime) - new Date(a.createdAt || a.datetime))).forEach(v =>
+      lines.push(`- REPEATED PLACE: ${v[0].location || v[0].block} visited ${v.length} times; latest note: ${hodShort(v[0].remarks, 120)}`));
+    lines.push('');
+  });
+  if (f.silent.length) lines.push(`Departments with NO field visits in this period: ${f.silent.slice(0, 30).join(', ')}`);
+  return lines.join('\n');
+}
+
+function hodRender(a) {
+  const ta = document.getElementById('hod-lang').value === 'ta';
+  const H = ta ? ['பிரச்சினை', 'இடம்', 'நிலுவை நாட்கள்', 'தேவையான நடவடிக்கை', 'பொறுப்பு', 'காலக்கெடு'] : ['Issue', 'Place', 'Days pending', 'Action needed', 'Responsible', 'Deadline'];
+  let h = `<h2 style="font-size:17px;margin:0 0 4px">${esc(a.title || 'HOD Review Meeting — Agenda')}</h2>`;
+  if (a.summary) h += `<p style="margin:0 0 8px">${esc(a.summary)}</p>`;
+  (a.departments || []).forEach(d => {
+    h += `<h3>${esc(d.name)}</h3><table><tr>${H.map(x => `<th>${x}</th>`).join('')}</tr>` +
+      (d.items || []).map((it, i) => `<tr><td>${i + 1}. ${esc(it.issue)}</td><td>${esc(it.place)}</td><td>${esc(it.days_pending)}</td><td>${esc(it.action)}</td><td>${esc(it.responsible)}</td><td>${esc(it.deadline)}</td></tr>`).join('') + '</table>';
+  });
+  if ((a.general || []).length) h += `<h3>${ta ? 'பொது விவாதம்' : 'General points'}</h3><ul>${a.general.map(g => `<li>${esc(g)}</li>`).join('')}</ul>`;
+  return h;
+}
+
+async function aiHodAgenda() {
+  const f = hodCollect();
+  if (!f.recs.length && !f.cases.length) { toast('No visits or open issues in this period', 'warn'); return; }
+  const btns = [...document.querySelectorAll('#hod-bg button[onclick="aiHodAgenda()"]')];
+  btns.forEach(b => { b.disabled = true; b.dataset.l = b.innerHTML; b.innerHTML = '⏳ <span>Writing agenda…</span>'; });
+  try {
+    const lang = document.getElementById('hod-lang').value === 'ta' ? 'Tamil' : 'English';
+    const out = await callAI('agenda', `LANGUAGE: ${lang}\n\n` + hodFactsText(f), 80000);
+    let a;
+    try { a = JSON.parse(out.replace(/^```(?:json)?|```$/g, '').trim()); } catch (_) { throw new Error('AI reply was not in the expected format. Tap Write again.'); }
+    document.getElementById('hod-agenda').innerHTML = hodRender(a);
+    document.getElementById('hod-out').hidden = false;
+    document.getElementById('hod-out').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) { toast('⚠️ ' + e.message, 'warn'); }
+  finally { btns.forEach(b => { b.disabled = false; b.innerHTML = b.dataset.l; }); }
+}
+
+function printHodAgenda() {
+  const body = document.getElementById('hod-agenda').innerHTML;
+  const w = window.open('', '_blank');
+  if (!w) { toast('Allow pop-ups to download the PDF', 'warn'); return; }
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HOD meeting agenda</title>
+<style>body{font-family:'Noto Sans Tamil','Latha','Segoe UI',Roboto,Arial,sans-serif;color:#202124;margin:24px;font-size:12px;line-height:1.45}
+h2{font-size:18px;margin:0 0 4px}h3{font-size:14px;color:#1A73E8;margin:16px 0 6px;page-break-after:avoid}
+table{width:100%;border-collapse:collapse;margin-bottom:8px;page-break-inside:auto}tr{page-break-inside:avoid}
+th,td{border:1px solid #999;padding:5px 7px;text-align:left;vertical-align:top}th{background:#F1F3F4}
+.meta{color:#5F6368;font-size:11px;margin-bottom:10px}@page{size:A4;margin:14mm}@media print{.np{display:none}}</style></head><body>
+<div class="np" style="text-align:center;margin-bottom:12px"><button onclick="window.print()" style="padding:8px 18px;font-size:14px">🖨 Print / Save as PDF</button></div>
+<div class="meta">Mayiladuthurai District · Generated ${new Date().toLocaleString('en-IN')} from the Field Visits app</div>${body}
+<script>setTimeout(function(){window.print()},400)<\/script></body></html>`);
+  w.document.close();
 }
 
 // ── Map of visits ─────────────────────────────────────────────────────────────
@@ -10794,7 +10929,8 @@ var TA = {
   'Admin Access Control': 'நிர்வாகி அணுகல்', 'Admin Password': 'நிர்வாகி கடவுச்சொல்', 'Login as Admin': 'நிர்வாகியாக உள்நுழை',
   'Data Management': 'தரவு மேலாண்மை', 'Download All Records': 'அனைத்தையும் பதிவிறக்கு', 'Push Sync': 'ஒத்திசை',
   'Clear Local Data': 'இந்தப் போனில் உள்ள தரவை அழி',
-  'Clean up with AI': 'AI மூலம் சீராக்கு', 'Undo': 'பழையபடி', 'Write AI summary': 'AI சுருக்கம் எழுது',
+  'Clean up with AI': 'AI மூலம் சீராக்கு', 'Write agenda': 'நிகழ்ச்சி நிரல் எழுது', 'Write again': 'மீண்டும் எழுது', 'Writing agenda…': 'எழுதுகிறது…',
+  'Tap any text to edit it before downloading.': 'பதிவிறக்கும் முன் எந்த உரையையும் தொட்டு திருத்தலாம்.', 'Undo': 'பழையபடி', 'Write AI summary': 'AI சுருக்கம் எழுது',
   'Cleaning up…': 'சீராக்குகிறது…', 'Writing summary…': 'சுருக்கம் எழுதுகிறது…', 'Your full name': 'உங்கள் முழுப் பெயர்'
 };
 
@@ -10906,5 +11042,27 @@ window.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => { sp.classList.add('out'); setTimeout(() => sp.remove(), 350); }, 450);
 });
 </script>
+<div class="modal-bg" id="hod-bg" onclick="if(event.target===this)closeHodAgenda()">
+  <div class="modal hod-modal">
+    <div class="modal-head"><div class="modal-title">✨ HOD meeting agenda</div><button class="hod-x" onclick="closeHodAgenda()" aria-label="Close">✕</button></div>
+    <div class="modal-body">
+      <div class="hod-opts">
+        <label><span>Period</span><select class="sel" id="hod-days"><option value="7">Last 7 days</option><option value="15">Last 15 days</option><option value="30" selected>Last 30 days</option><option value="60">Last 60 days</option><option value="90">Last 90 days</option></select></label>
+        <label><span>Department</span><select class="sel" id="hod-dept"></select></label>
+        <label><span>Language</span><select class="sel" id="hod-lang"><option value="en">English</option><option value="ta">தமிழ்</option></select></label>
+      </div>
+      <div id="hod-facts" class="hod-facts"></div>
+      <button type="button" class="wk-go" id="hod-go" onclick="aiHodAgenda()">✨ <span>Write agenda</span></button>
+      <div id="hod-out" hidden>
+        <p class="hod-tip">Tap any text to edit it before downloading.</p>
+        <div id="hod-agenda" contenteditable="true" spellcheck="false"></div>
+        <div class="hod-acts">
+          <button type="button" class="wk-go" onclick="printHodAgenda()">Download PDF</button>
+          <button type="button" class="ai-btn" onclick="aiHodAgenda()">↻ <span>Write again</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
