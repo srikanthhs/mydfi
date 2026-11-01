@@ -2532,6 +2532,14 @@ body:not([data-page="form"]) .nf-submit { display: none; }
 #wk-stats b { display: block; font-size: 20px; color: var(--c-text, #202124); }
 #wk-stats span { font-size: 11px; color: var(--c-text-2, #5F6368); }
 .wk-go { width: 100%; border: none; border-radius: 10px; padding: 10px; background: var(--c-primary, #1A73E8); color: #fff; font-weight: 700; font-size: 14px; cursor: pointer; font-family: inherit; }
+/* AI helpers */
+.ai-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+.ai-btn { display: inline-flex; align-items: center; gap: 6px; border: 1.5px solid var(--c-primary, #1A73E8); background: transparent; color: var(--c-primary, #1A73E8); border-radius: 18px; padding: 7px 14px; font: 600 13px var(--font, inherit); cursor: pointer; }
+.ai-btn:disabled { opacity: .6; cursor: wait; }
+.ai-undo { border: none; background: none; color: var(--c-text-2, #5F6368); font: 600 13px var(--font, inherit); text-decoration: underline; cursor: pointer; padding: 7px 6px; }
+.ai-btn[hidden], .ai-undo[hidden], #wk-ai[hidden] { display: none !important; }
+.wk-ai-btn { width: 100%; justify-content: center; margin-bottom: 8px; }
+#wk-ai { white-space: pre-line; font-size: 13px; line-height: 1.55; color: var(--c-text, #202124); background: var(--c-surface-2, #F1F3F4); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
 /* Admin: close stale issues */
 .bulk-close { display: flex; align-items: center; gap: 12px; padding: 12px 14px; margin-bottom: 14px; border-radius: 12px; background: var(--c-surface-2, #F1F3F4); font-size: 13px; color: var(--c-text, #202124); }
 .bulk-close[hidden] { display: none; }
@@ -3036,6 +3044,10 @@ window._drainQueue = function() {
         <textarea class="ta-inp" id="f-remarks" rows="5" placeholder="Write what you saw and what action is needed. Tap the mic to speak instead."></textarea>
         <button class="voice-btn" id="voice-btn" onclick="toggleVoice()" title="Speak instead of typing" style="position:absolute;bottom:12px;right:12px">🎤</button>
       </div>
+      <div class="ai-row">
+        <button type="button" class="ai-btn" id="ai-notes-btn" onclick="aiCleanNotes()">✨ <span>Clean up with AI</span></button>
+        <button type="button" class="ai-undo" id="ai-notes-undo" hidden onclick="aiUndoNotes()"><span>Undo</span></button>
+      </div>
     </section>
 
     <section class="nf-card">
@@ -3110,6 +3122,8 @@ window._drainQueue = function() {
     <div class="wk-top"><span style="font-size:20px">📊</span><b>Last week's summary</b><button onclick="dismissWeeklyCard()" aria-label="Dismiss">✕</button></div>
     <div id="wk-range"></div>
     <div id="wk-stats"></div>
+    <div id="wk-ai" hidden></div>
+    <button type="button" class="ai-btn wk-ai-btn" id="wk-ai-btn" onclick="aiWeeklySummary()">✨ <span>Write AI summary</span></button>
     <button class="wk-go" onclick="openWeeklySummary()">Download weekly report (PDF)</button>
   </div>
   <div class="visits-stats" id="visits-stats-bar">
@@ -10435,6 +10449,9 @@ function updateWeeklyCard() {
   document.getElementById('wk-stats').innerHTML =
     [[recs.length, 'visits'], [officers, 'officers'], [issues, 'issues raised'], [overdue, 'overdue now']]
       .map(([n, l]) => `<div><b>${n}</b><span>${l}</span></div>`).join('');
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem('fv_weekly_ai') || 'null'); } catch (_) {}
+  showWeeklyAI(saved && saved.key === wk.key ? saved.text : '');
   card.hidden = false;
 }
 
@@ -10451,6 +10468,72 @@ function dismissWeeklyCard(key) {
   try { localStorage.setItem('fv_weekly_done', key || weeklySummaryState().key || ''); } catch (_) {}
   const card = document.getElementById('weekly-card');
   if (card) card.hidden = true;
+}
+
+// ── AI helpers (Gemini via /api/ai; the key stays on Vercel) ──────────────────
+async function callAI(task, text) {
+  if (!navigator.onLine) throw new Error('AI needs internet. Try again when online.');
+  const r = await fetch('/api/ai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ task, text }) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.text) throw new Error(j.error || 'AI is not available right now.');
+  return j.text;
+}
+
+let _aiNotesBefore = null;
+async function aiCleanNotes() {
+  const ta = document.getElementById('f-remarks'), btn = document.getElementById('ai-notes-btn');
+  const text = (ta.value || '').trim();
+  if (text.length < 5) { toast('✍️ Write or speak a few words first', 'warn'); return; }
+  btn.disabled = true; const label = btn.innerHTML; btn.innerHTML = '⏳ <span>Cleaning up…</span>';
+  try {
+    const out = await callAI('notes', text);
+    _aiNotesBefore = ta.value;
+    ta.value = out;
+    document.getElementById('ai-notes-undo').hidden = false;
+    toast('✨ Notes cleaned up. Check them before saving.', 'success');
+  } catch (e) { toast('⚠️ ' + e.message, 'warn'); }
+  finally { btn.disabled = false; btn.innerHTML = label; if (typeof translateNode === 'function') translateNode(btn.parentElement); }
+}
+function aiUndoNotes() {
+  if (_aiNotesBefore != null) document.getElementById('f-remarks').value = _aiNotesBefore;
+  _aiNotesBefore = null;
+  document.getElementById('ai-notes-undo').hidden = true;
+}
+// A new visit form starts without the old undo
+document.addEventListener('input', e => { if (e.target && e.target.id === 'f-remarks' && _aiNotesBefore != null && !e.target.value) aiUndoNotes(); });
+
+function weeklyAIData(wk) {
+  const recs = APP.records.filter(r => { const d = new Date(r.createdAt || r.datetime); return d >= wk.from && d <= wk.to; });
+  const count = f => { const m = {}; recs.forEach(r => { const k = (f(r) || '').trim(); if (k) m[k] = (m[k] || 0) + 1; }); return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([k, n]) => `${k} (${n})`).join(', '); };
+  const notes = recs.filter(r => r.coordRequired).concat(recs.filter(r => !r.coordRequired)).slice(0, 40)
+    .map(r => `- [${r.department || ''}] ${r.location || ''}${r.block ? ', ' + r.block : ''}: ${String(r.remarks || '').replace(/\s+/g, ' ').slice(0, 220)}${r.coordRequired ? ' (ISSUE raised' + (r.coordNotes ? ': ' + String(r.coordNotes).slice(0, 120) : '') + ')' : ''}`);
+  const overdue = getCoordCases().filter(coordIsOverdue).map(c => [c.title, c.location].filter(Boolean).join(' at ').slice(0, 100)).filter(Boolean).slice(0, 10);
+  return [`Week: ${wk.label}`, `Visits: ${recs.length}`,
+    `Officers: ${new Set(recs.map(r => (r.officerName || r.submittedBy || '').trim()).filter(Boolean)).size}`,
+    `Issues raised: ${recs.filter(r => r.coordRequired).length}`,
+    `Visits by department: ${count(r => r.department)}`, `Visits by block: ${count(r => r.block)}`,
+    `Overdue issues now: ${getCoordCases().filter(coordIsOverdue).length}${overdue.length ? ' (' + overdue.join('; ') + ')' : ''}`,
+    'Visit notes:', ...notes].join('\n');
+}
+
+function showWeeklyAI(text) {
+  const box = document.getElementById('wk-ai'), btn = document.getElementById('wk-ai-btn');
+  if (!box) return;
+  box.textContent = text; box.hidden = !text;
+  if (btn) btn.hidden = !!text;
+}
+
+async function aiWeeklySummary() {
+  const wk = weeklySummaryState(), btn = document.getElementById('wk-ai-btn');
+  if (!wk.key) return;
+  if (!APP.records.some(r => { const d = new Date(r.createdAt || r.datetime); return d >= wk.from && d <= wk.to; })) { toast('No visits last week to summarise', 'warn'); return; }
+  btn.disabled = true; const label = btn.innerHTML; btn.innerHTML = '⏳ <span>Writing summary…</span>';
+  try {
+    const out = await callAI('weekly', weeklyAIData(wk));
+    try { localStorage.setItem('fv_weekly_ai', JSON.stringify({ key: wk.key, text: out })); } catch (_) {}
+    showWeeklyAI(out);
+  } catch (e) { toast('⚠️ ' + e.message, 'warn'); }
+  finally { btn.disabled = false; btn.innerHTML = label; if (typeof translateNode === 'function') translateNode(btn); }
 }
 
 // ── Map of visits ─────────────────────────────────────────────────────────────
@@ -10705,7 +10788,9 @@ var TA = {
   'Designation': 'பதவி', 'Save Profile': 'சுயவிவரத்தைச் சேமி', 'Switch Officer / Logout': 'அலுவலரை மாற்று / வெளியேறு',
   'Admin Access Control': 'நிர்வாகி அணுகல்', 'Admin Password': 'நிர்வாகி கடவுச்சொல்', 'Login as Admin': 'நிர்வாகியாக உள்நுழை',
   'Data Management': 'தரவு மேலாண்மை', 'Download All Records': 'அனைத்தையும் பதிவிறக்கு', 'Push Sync': 'ஒத்திசை',
-  'Clear Local Data': 'இந்தப் போனில் உள்ள தரவை அழி', 'Your full name': 'உங்கள் முழுப் பெயர்'
+  'Clear Local Data': 'இந்தப் போனில் உள்ள தரவை அழி',
+  'Clean up with AI': 'AI மூலம் சீராக்கு', 'Undo': 'பழையபடி', 'Write AI summary': 'AI சுருக்கம் எழுது',
+  'Cleaning up…': 'சீராக்குகிறது…', 'Writing summary…': 'சுருக்கம் எழுதுகிறது…', 'Your full name': 'உங்கள் முழுப் பெயர்'
 };
 
 var I18N_ATTR = 'data-en';
