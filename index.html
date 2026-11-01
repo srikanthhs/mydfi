@@ -10589,18 +10589,13 @@ function hodCollect() {
   const cases = getCoordCases().filter(c => HOD_OPEN(c) && (!only || c.sourceDept === only || (c.concernedDepts || []).includes(only)));
   const allDepts = [...new Set(APP.records.map(r => r.department).filter(Boolean))];
   const byDept = {};
-  const D = name => (byDept[name] = byDept[name] || { visits: 0, officers: new Set(), urgent: [], places: {}, issues: [] });
-  recs.forEach(r => {
-    const d = D(r.department || 'Other');
-    d.visits++; if (r.officerName) d.officers.add(r.officerName);
-    if (r.priority === 'urgent' || r.priority === 'high' || r.coordRequired) d.urgent.push(r);
-    const place = (r.location || r.block || '').trim().toLowerCase();
-    if (place) (d.places[place] = d.places[place] || []).push(r);
-  });
+  const D = name => (byDept[name] = byDept[name] || { visits: [], officers: new Set(), issues: [] });
+  recs.forEach(r => { const d = D(r.department || 'Other'); d.visits.push(r); if (r.officerName) d.officers.add(r.officerName); });
   cases.forEach(c => {
     const owners = [c.sourceDept].concat(c.concernedDepts || []).filter(Boolean).filter(inDept);
-    (owners.length ? [owners[0]] : ['Other']).forEach(o => D(o).issues.push(c));
+    D(owners[0] || 'Other').issues.push(c);
   });
+  Object.values(byDept).forEach(d => d.visits.sort((a, b) => new Date(b.createdAt || b.datetime) - new Date(a.createdAt || a.datetime)));
   const silent = only ? (recs.length ? [] : [only]) : allDepts.filter(d => !recs.some(r => r.department === d));
   return { days, only, from, recs, cases, byDept, silent };
 }
@@ -10609,55 +10604,82 @@ function hodShowFacts() {
   const f = hodCollect();
   const overdue = f.cases.filter(coordIsOverdue).length;
   document.getElementById('hod-facts').innerHTML =
-    `From <b>${f.from.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</b>: <b>${f.recs.length}</b> visits, <b>${f.cases.length}</b> open issues (<b>${overdue}</b> overdue)` +
-    (f.silent.length ? `, <b>${f.silent.length}</b> department(s) with no visits` : '') + '.';
+    `From <b>${f.from.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</b>: <b>${f.recs.length}</b> visits in <b>${Object.keys(f.byDept).length}</b> departments, <b>${f.cases.length}</b> open issues (<b>${overdue}</b> overdue)` +
+    (f.silent.length ? `, <b>${f.silent.length}</b> department(s) with no visits` : '') + '. Every visit is read.';
   document.getElementById('hod-out').hidden = true;
 }
 
-function hodFactsText(f) {
-  const lines = [`Today: ${ymd(new Date())}`, `Period: last ${f.days} days (from ${ymd(f.from)})`, `Departments covered: ${f.only || 'all'}`, ''];
-  Object.entries(f.byDept).sort((a, b) => (b[1].issues.length + b[1].urgent.length) - (a[1].issues.length + a[1].urgent.length)).slice(0, 25).forEach(([name, d]) => {
-    lines.push(`## ${name}: ${d.visits} visits by ${d.officers.size} officers, ${d.issues.length} open issues`);
-    d.issues.sort((a, b) => hodDaysOld(b.createdAt) - hodDaysOld(a.createdAt)).slice(0, 8).forEach(c =>
-      lines.push(`- OPEN ISSUE: ${hodShort(c.title, 140)} | place: ${c.location || '-'} | pending ${hodDaysOld(c.createdAt)} days${coordIsOverdue(c) ? ' (OVERDUE)' : ''} | priority ${c.priority || 'medium'} | depts involved: ${[c.sourceDept].concat(c.concernedDepts || []).filter(Boolean).join(', ')}${c.dueDate ? ' | due ' + c.dueDate : ''}${c.notes ? ' | notes: ' + hodShort(c.notes, 100) : ''}`));
-    d.urgent.slice(0, 5).forEach(r =>
-      lines.push(`- URGENT/HIGH VISIT: ${hodShort(r.remarks, 160)} | place: ${r.location || r.block || '-'} | ${hodDaysOld(r.createdAt || r.datetime)} days ago | officer ${r.officerName || '-'}`));
-    Object.values(d.places).filter(v => v.length >= 2).slice(0, 3).map(v => v.slice().sort((a, b) => new Date(b.createdAt || b.datetime) - new Date(a.createdAt || a.datetime))).forEach(v =>
-      lines.push(`- REPEATED PLACE: ${v[0].location || v[0].block} visited ${v.length} times; latest note: ${hodShort(v[0].remarks, 120)}`));
-    lines.push('');
-  });
-  if (f.silent.length) lines.push(`Departments with NO field visits in this period: ${f.silent.slice(0, 30).join(', ')}`);
+// All facts for one department: every open issue and every visit note (newest first)
+function hodDeptFacts(name, d, f) {
+  const lines = [`Today: ${ymd(new Date())}`, `Department: ${name}`, `Period: last ${f.days} days`, `${d.visits.length} field visits by ${d.officers.size} officers; ${d.issues.length} open issues`, ''];
+  d.issues.sort((a, b) => hodDaysOld(b.createdAt) - hodDaysOld(a.createdAt)).slice(0, 40).forEach(c =>
+    lines.push(`ISSUE: ${hodShort(c.title, 160)} | place: ${c.location || '-'} | pending ${hodDaysOld(c.createdAt)} days${coordIsOverdue(c) ? ' (OVERDUE)' : ''} | priority ${c.priority || 'medium'} | depts: ${[c.sourceDept].concat(c.concernedDepts || []).filter(Boolean).join(', ')}${c.dueDate ? ' | due ' + c.dueDate : ''}${c.notes ? ' | notes: ' + hodShort(c.notes, 120) : ''}`));
+  let budget = 14000;
+  for (const r of d.visits) {
+    const line = `VISIT ${ymd(new Date(r.createdAt || r.datetime))} | ${r.location || r.block || '-'}${r.block && r.location ? ', ' + r.block : ''} | officer ${r.officerName || '-'}${r.coordRequired ? ' | NEEDS COORDINATION with ' + ((r.concernedDepts || []).join(', ') || 'other depts') : ''} | ${hodShort(r.remarks, 260)}${r.coordNotes ? ' | coordination note: ' + hodShort(r.coordNotes, 120) : ''}`;
+    if ((budget -= line.length) < 0) { lines.push(`(…${d.visits.length - lines.filter(l => l.startsWith('VISIT')).length} older visits not shown)`); break; }
+    lines.push(line);
+  }
   return lines.join('\n');
 }
 
-function hodRender(a) {
+function hodRender(state) {
   const ta = document.getElementById('hod-lang').value === 'ta';
   const H = ta ? ['பிரச்சினை', 'இடம்', 'நிலுவை நாட்கள்', 'தேவையான நடவடிக்கை', 'பொறுப்பு', 'காலக்கெடு'] : ['Issue', 'Place', 'Days pending', 'Action needed', 'Responsible', 'Deadline'];
-  let h = `<h2 style="font-size:17px;margin:0 0 4px">${esc(a.title || 'HOD Review Meeting — Agenda')}</h2>`;
-  if (a.summary) h += `<p style="margin:0 0 8px">${esc(a.summary)}</p>`;
-  (a.departments || []).forEach(d => {
-    h += `<h3>${esc(d.name)}</h3><table><tr>${H.map(x => `<th>${x}</th>`).join('')}</tr>` +
-      (d.items || []).map((it, i) => `<tr><td>${i + 1}. ${esc(it.issue)}</td><td>${esc(it.place)}</td><td>${esc(it.days_pending)}</td><td>${esc(it.action)}</td><td>${esc(it.responsible)}</td><td>${esc(it.deadline)}</td></tr>`).join('') + '</table>';
+  const f = state.f, total = state.depts.reduce((n, d) => n + (d.items || []).length, 0);
+  let h = `<h2 style="font-size:17px;margin:0 0 4px">${ta ? 'துறைத் தலைவர்கள் ஆய்வுக் கூட்டம் — நிகழ்ச்சி நிரல்' : 'HOD Review Meeting — Agenda'}</h2>` +
+    `<p style="margin:0 0 8px">${ta ? `கடந்த ${f.days} நாட்கள்: ${f.recs.length} கள ஆய்வுகள், ${f.cases.length} நிலுவைச் சிக்கல்கள், ${total} நடவடிக்கைப் புள்ளிகள்.` : `Last ${f.days} days: ${f.recs.length} field visits, ${f.cases.length} open issues, ${total} action points.`}</p>`;
+  state.depts.forEach(d => {
+    h += `<h3>${esc(d.name)} <span style="font-weight:400;font-size:12px;color:#5F6368">(${(d.items || []).length})</span></h3>`;
+    if (d.error) { h += `<p style="color:#D93025">${esc(d.error)}</p>`; return; }
+    if (!(d.items || []).length) { h += `<p>${ta ? 'நடவடிக்கை தேவையில்லை.' : 'No action points.'}</p>`; return; }
+    h += `<table><tr>${H.map(x => `<th>${x}</th>`).join('')}</tr>` +
+      d.items.map((it, i) => `<tr><td>${i + 1}. ${esc(it.issue)}</td><td>${esc(it.place)}</td><td>${esc(it.days_pending)}</td><td>${esc(it.action)}</td><td>${esc(it.responsible)}</td><td>${esc(it.deadline)}</td></tr>`).join('') + '</table>';
   });
-  if ((a.general || []).length) h += `<h3>${ta ? 'பொது விவாதம்' : 'General points'}</h3><ul>${a.general.map(g => `<li>${esc(g)}</li>`).join('')}</ul>`;
+  if (f.silent.length) h += `<h3>${ta ? 'பொது' : 'General'}</h3><ul><li>${ta ? 'இந்தக் காலத்தில் கள ஆய்வு இல்லாத துறைகள்: ' : 'Departments with no field visits in this period: '}${esc(f.silent.join(', '))}</li></ul>`;
   return h;
 }
 
+let _hodRun = 0;
 async function aiHodAgenda() {
   const f = hodCollect();
-  if (!f.recs.length && !f.cases.length) { toast('No visits or open issues in this period', 'warn'); return; }
+  const names = Object.entries(f.byDept).sort((a, b) => (b[1].issues.length * 3 + b[1].visits.length) - (a[1].issues.length * 3 + a[1].visits.length)).map(([n]) => n);
+  if (!names.length) { toast('No visits or open issues in this period', 'warn'); return; }
+  const run = ++_hodRun;
+  const lang = document.getElementById('hod-lang').value === 'ta' ? 'Tamil' : 'English';
+  const state = { f, depts: [] };
+  const out = document.getElementById('hod-out'), box = document.getElementById('hod-agenda');
   const btns = [...document.querySelectorAll('#hod-bg button[onclick="aiHodAgenda()"]')];
-  btns.forEach(b => { b.disabled = true; b.dataset.l = b.innerHTML; b.innerHTML = '⏳ <span>Writing agenda…</span>'; });
-  try {
-    const lang = document.getElementById('hod-lang').value === 'ta' ? 'Tamil' : 'English';
-    const out = await callAI('agenda', `LANGUAGE: ${lang}\n\n` + hodFactsText(f), 80000);
-    let a;
-    try { a = JSON.parse(out.replace(/^```(?:json)?|```$/g, '').trim()); } catch (_) { throw new Error('AI reply was not in the expected format. Tap Write again.'); }
-    document.getElementById('hod-agenda').innerHTML = hodRender(a);
-    document.getElementById('hod-out').hidden = false;
-    document.getElementById('hod-out').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  } catch (e) { toast('⚠️ ' + e.message, 'warn'); }
-  finally { btns.forEach(b => { b.disabled = false; b.innerHTML = b.dataset.l; }); }
+  btns.forEach(b => { b.disabled = true; b.dataset.l = b.dataset.l || b.innerHTML; });
+  const progress = () => btns.forEach(b => b.innerHTML = `⏳ <span>${state.depts.length} of ${names.length} departments…</span>`);
+  progress();
+  box.innerHTML = ''; out.hidden = false;
+  const results = {};
+  let next = 0;
+  async function worker() {
+    while (next < names.length && run === _hodRun) {
+      const name = names[next++];
+      let item;
+      try {
+        const txt = await callAI('agenda_dept', `LANGUAGE: ${lang}\n\n` + hodDeptFacts(name, f.byDept[name], f), 70000);
+        const a = JSON.parse(txt.replace(/^```(?:json)?|```$/g, '').trim());
+        item = { name, items: Array.isArray(a) ? a : (a.items || []) };
+      } catch (e) { item = { name, items: [], error: (e && e.message) || 'Could not write this department.' }; }
+      if (run !== _hodRun) return;
+      results[name] = item;
+      state.depts = names.filter(n => results[n]).map(n => results[n]);
+      box.innerHTML = hodRender(state);
+      progress();
+    }
+  }
+  try { await Promise.all([worker(), worker()]); }
+  finally {
+    if (run === _hodRun) {
+      btns.forEach(b => { b.disabled = false; b.innerHTML = b.dataset.l; });
+      const failed = state.depts.filter(d => d.error).length;
+      toast(failed ? `⚠️ ${failed} department(s) could not be written. Tap Write again.` : `✅ Agenda ready: ${state.depts.reduce((n, d) => n + d.items.length, 0)} action points`, failed ? 'warn' : 'success');
+    }
+  }
 }
 
 function printHodAgenda() {

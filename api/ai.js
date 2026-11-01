@@ -29,8 +29,20 @@ const PROMPTS = {
     'Reply with JSON only, exactly this shape:\n' +
     '{"title": string, "summary": string (one or two sentences), "departments": [{"name": string, "items": [{"issue": string, "place": string, "days_pending": string, "action": string, "responsible": string, "deadline": string}]}], "general": [string]}\n\nFacts:\n' + text
 };
-const JSON_TASKS = { agenda: true };
-const TRY_MS_BY_TASK = { agenda: 28000 };
+PROMPTS.agenda_dept = text =>
+  'You prepare action points for ONE department for the District Collector\'s review meeting with Heads of Departments (HODs), Mayiladuthurai District, Tamil Nadu.\n' +
+  'Below are ALL field inspection visit notes and open issues for this department. Turn them into a COMPLETE list of actionable agenda points.\n' +
+  'Rules:\n' +
+  '- Go through EVERY visit and issue. Every problem, shortfall, pending work, complaint or follow-up mentioned must become an action point. Do not leave any out.\n' +
+  '- Merge only true duplicates (same problem at the same place). Different places are separate points.\n' +
+  '- Skip only visits that report everything is fine and need no action.\n' +
+  '- Use ONLY the facts given. Never invent places, numbers, names or problems.\n' +
+  '- Each point: issue (one short line), place, days_pending (days since the visit or issue was raised, as a number, from Today), action (a concrete step the HOD must order), responsible ("HOD, <department>" or the other department named in the facts), deadline (YYYY-MM-DD from Today: overdue or urgent = 7 days, needs coordination = 15 days, others = 30 days).\n' +
+  '- Order: overdue issues first, then coordination needs, then the rest by days pending (oldest first).\n' +
+  '- Write issue, action and responsible in the LANGUAGE given at the top. Keep place names as given.\n' +
+  'Reply with JSON only: {"items": [{"issue": string, "place": string, "days_pending": string, "action": string, "responsible": string, "deadline": string}]}\n\nFacts:\n' + text;
+const JSON_TASKS = { agenda: true, agenda_dept: true };
+const TRY_MS_BY_TASK = { agenda: 28000, agenda_dept: 28000 };
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });

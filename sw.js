@@ -1,7 +1,7 @@
 // Offline support: the app opens straight from its saved copy, and a fresh copy is
 // fetched in the background; when it differs the page is told so it can offer a refresh.
 // Firebase traffic is never touched.
-const CACHE = 'field-visits-v17';
+const CACHE = 'field-visits-v18';
 const SHELL = ['/', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
 const CDN = ['cdnjs.cloudflare.com'];
 const HASHED = /^\/app\.[0-9a-f]+\.(js|css)$/;
