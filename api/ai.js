@@ -1,7 +1,9 @@
 // AI helper for the app. The Gemini key lives only in Vercel (GEMINI_API_KEY),
 // so phones never see it. Two jobs: tidy a visit note, write a weekly summary.
 // Tried in order; the first that Google accepts is used (older model names get retired)
-const MODELS = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.0-flash'];
+// Fast models first. Each try gets a time limit; on a missing model or a timeout the next one is tried.
+const MODELS = ['gemini-flash-lite-latest', 'gemini-2.5-flash-lite', 'gemini-flash-latest', 'gemini-2.5-flash'];
+const TRY_MS = 15000;
 
 const PROMPTS = {
   notes: text =>
@@ -31,17 +33,26 @@ module.exports = async (req, res) => {
   try {
     let r, j, model;
     for (model of MODELS) {
+      const ctl = new AbortController();
+      const timer = setTimeout(() => ctl.abort(), TRY_MS);
+      try {
       r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
         body: JSON.stringify({
           contents: [{ role: 'user', parts: [{ text: PROMPTS[task](text) }] }],
           generationConfig: { temperature: 0.3, maxOutputTokens: 2048 }
-        })
+        }),
+        signal: ctl.signal
       });
       j = await r.json().catch(() => ({}));
+      } catch (e) {
+        console.error('Gemini timeout or network error', model, e.name);
+        r = null; continue; // too slow: try the next model
+      } finally { clearTimeout(timer); }
       if (r.status !== 404) break; // model name not available: try the next one
     }
+    if (!r) return res.status(504).json({ error: 'AI took too long to answer. Try again.' });
     if (!r.ok) {
       if (r.status === 429) return res.status(429).json({ error: 'AI daily free limit reached. Try again later.' });
       const why = String((j.error && j.error.message) || r.statusText || '').slice(0, 200);
