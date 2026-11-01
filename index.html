@@ -1945,6 +1945,68 @@ body.is-admin .admin-only { display: inline-flex; }
   .myd-grid { grid-template-columns: 1fr 1fr; }
   .form-panel { padding: 12px; }
 }
+
+/* ══════════════════════════════════════════════
+   ── HOD REVIEW MEETING ACTION TRACKER ──
+══════════════════════════════════════════════ */
+.hod-subtabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);overflow-x:auto}
+.hod-subtabs button{border:0;background:none;padding:9px 14px;font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;color:var(--text-3);border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+.hod-subtabs button.active{color:var(--ink);border-bottom-color:var(--saffron)}
+.hod-filters{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;padding:12px 14px;background:var(--white);border-radius:var(--r);border:1px solid var(--border);box-shadow:var(--shadow-sm)}
+.hod-filters .inp,.hod-filters .sel{height:36px;font-size:12px;width:auto;flex:1 1 150px;min-width:0}
+.hod-filters .hod-q{flex:2 1 220px}
+.hod-count{font-size:12px;color:var(--text-3);margin-left:auto}
+.hod-table-wrap{background:var(--white);border:1px solid var(--border);border-radius:var(--r);overflow-x:auto;box-shadow:var(--shadow-sm)}
+.hod-table{width:100%;border-collapse:collapse;font-size:13px;min-width:820px}
+.hod-table th{background:var(--ink);color:#fff;text-align:left;padding:10px 12px;font-size:11px;letter-spacing:.5px;text-transform:uppercase}
+.hod-table td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+.hod-table tbody tr{cursor:pointer}
+.hod-table tbody tr:hover{background:var(--sky-pale)}
+.hod-table tr.hod-R td:first-child{box-shadow:inset 4px 0 0 var(--crimson)}
+.hod-table tr.hod-A td:first-child{box-shadow:inset 4px 0 0 var(--gold)}
+.hod-table tr.hod-G td:first-child{box-shadow:inset 4px 0 0 var(--jade)}
+.hod-id{font-family:monospace;font-size:12px;color:var(--text-3);white-space:nowrap}
+.hod-act{font-weight:600;color:var(--text)}
+.hod-sub{font-size:12px;color:var(--text-3);margin-top:2px}
+.hod-latest{font-size:12px;color:var(--text-2);margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hod-rag{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;border-radius:4px;font-size:11px;font-weight:800;padding:0 5px;color:#fff}
+.hod-rag-R{background:var(--crimson)}.hod-rag-A{background:var(--gold)}.hod-rag-G{background:var(--jade)}.hod-rag-C{background:var(--text-3)}
+.hod-pill{display:inline-flex;align-items:center;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;white-space:nowrap;background:var(--stone);color:var(--text-2)}
+.hod-pill.chronic{background:#FCECEA;color:var(--crimson)}.hod-pill.silent{background:#FFF7E0;color:#8a6400}
+.hod-pill.overdue{background:#F3E5F5;color:#7a2e8f}.hod-pill.prog{background:var(--sky-pale);color:var(--sky)}
+.hod-pill.done{background:var(--jade-pale);color:var(--jade)}.hod-pill.dropped{text-decoration:line-through}
+.hod-esc{display:block;font-size:11px;color:var(--text-3);margin-top:4px}.hod-esc.l3{color:var(--crimson);font-weight:700}
+.hod-late{color:#7a2e8f;font-weight:700}
+.hod-empty{padding:40px;text-align:center;color:var(--text-3)}
+.hod-ag{background:var(--white);border:1px solid var(--border);border-radius:var(--r);margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow-sm)}
+.hod-ag-head{display:flex;justify-content:space-between;padding:10px 14px;background:var(--stone);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px}
+.hod-ag-row{display:grid;grid-template-columns:24px 60px minmax(0,1fr) auto;gap:10px;padding:10px 14px;border-top:1px solid var(--border);align-items:start}
+.hod-ag-row.sel{background:var(--sky-pale)}
+.hod-ag-side{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.hod-ag-btns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.hod-closer{grid-column:3 / -1;display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--stone);border-radius:8px;padding:8px}
+.hod-closer .inp{flex:1 1 220px;height:34px}
+.hod-selbar{position:sticky;top:0;z-index:20;display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--white);border:2px solid var(--sky);border-radius:var(--r);padding:10px 12px;margin-bottom:12px;box-shadow:var(--shadow)}
+.hod-selbar .inp{flex:1 1 220px;height:34px}
+.hod-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.hod-kpis .kpi{padding:14px 16px}.hod-kpis .kpi-value{font-size:26px}
+.hod-mini{display:flex;gap:2px;height:10px;width:110px;border-radius:3px;overflow:hidden;background:var(--stone)}
+.hod-mini span{height:100%}
+.hod-hist{list-style:none;margin:0;padding:0 0 0 14px;border-left:2px solid var(--border);display:flex;flex-direction:column;gap:10px}
+.hod-hist li{font-size:13px}.hod-hist .when{font-size:11px;color:var(--text-3)}
+.hod-facts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:var(--stone);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--text-3)}
+.hod-facts b{display:block;font-size:15px;color:var(--text)}
+.hod-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.hod-field{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.hod-field>span{font-size:12px;font-weight:700;color:var(--text-2)}
+.hod-visit{display:flex;gap:10px;align-items:center;background:var(--jade-pale);border:1px solid #B8E0D6;border-radius:8px;padding:8px;margin-top:6px;font-size:12px}
+.hod-visit img{width:64px;height:48px;object-fit:cover;border-radius:4px}
+.hod-note{font-size:12px;color:var(--text-3)}
+@media (max-width:640px){
+  .hod-ag-row{grid-template-columns:22px 52px minmax(0,1fr)}
+  .hod-ag-side{grid-column:3;align-items:flex-start}.hod-ag-btns{justify-content:flex-start}
+  .hod-grid2,.hod-facts{grid-template-columns:1fr 1fr}
+}
 </style>
 </head>
 <body>
@@ -1965,7 +2027,7 @@ import { initializeApp }              from "https://www.gstatic.com/firebasejs/1
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import {
   getFirestore, collection, addDoc,
-  onSnapshot, doc, deleteDoc,
+  onSnapshot, doc, deleteDoc, setDoc, updateDoc,
   serverTimestamp, query, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import {
@@ -2056,6 +2118,8 @@ if (firebaseConfig.apiKey === 'YOUR_API_KEY') {
         collection:      (db2, path)     => collection(db2, path),
         doc:             (db2, col, id)  => doc(db2, col, id),
         deleteDoc:       (ref)           => deleteDoc(ref),
+        setDoc:          (ref, data)     => setDoc(ref, data),
+        updateDoc:       (ref, data)     => updateDoc(ref, data),
         serverTimestamp: ()              => serverTimestamp(),
         query:           (...args)       => query(...args),
         orderBy:         (f, d)          => orderBy(f, d),
@@ -2090,6 +2154,15 @@ if (firebaseConfig.apiKey === 'YOUR_API_KEY') {
         //              a custom field, so NO composite index is needed and ALL
         //              existing Firestore documents are returned regardless of
         //              whether they have a createdAtISO field.
+        // HOD review meeting action items (shared register)
+        window.__fb.onSnapshot(window.__fb.collection(db, 'hodActions'),
+          snap => {
+            if (window.hodOnSnapshot) window.hodOnSnapshot(snap.docs.map(d => d.data()));
+            addLog('📌 HOD actions — ' + snap.docs.length + ' items', 'ok');
+          },
+          err => addLog('❌ HOD actions sync error: ' + err.code + ' — ' + err.message + ' (check Firestore rules allow the hodActions collection)', 'err')
+        );
+
         const q = window.__fb.query(
           window.__fb.collection(db, 'inspections'),
           window.__fb.orderBy('createdAtISO', 'desc'),
@@ -2347,6 +2420,7 @@ window._drainQueue = function() {
   <button class="nav-tab" onclick="window._d('showPage',['form',this])">📝 New Inspection</button>
   <button class="nav-tab" onclick="window._d('showPage',['records',this])">📋 Records <span class="nav-count" id="rec-badge">0</span></button>
   <button class="nav-tab" onclick="window._d('showPage',['coordination',this])">🔗 Coordination <span class="nav-count" id="coord-badge" style="background:var(--sky)">0</span></button>
+  <button class="nav-tab" onclick="window._d('showPage',['hod-actions',this])">📌 HOD Actions <span class="nav-count" id="hod-badge" style="background:var(--crimson)" title="Red items">0</span></button>
   <button class="nav-tab" onclick="window._d('showPage',['map',this])">🗺 Live Map</button>
   <button class="nav-tab" onclick="window._d('showPage',['analytics',this])">📈 Analytics</button>
   <button class="nav-tab" onclick="window._d('showPage',['leaderboard',this])">🏆 Leaderboard</button>
@@ -3114,6 +3188,99 @@ window._drainQueue = function() {
 </div>
 
 <!-- ────────────────────────── ANALYTICS ────────────────────────── -->
+
+<!-- ════════════════════════════════════════
+     HOD REVIEW MEETING — ACTION TRACKER
+════════════════════════════════════════ -->
+<div id="page-hod-actions" class="page">
+  <div class="sec-head">
+    <div>
+      <div class="sec-title">📌 HOD <span>Actions</span></div>
+      <div class="sec-sub">Action items from the Collector's Monday HOD review meeting · RAG status · escalation · ATR evidence from field visits</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <label class="hod-note" for="hod-asof">As of <input type="date" id="hod-asof" class="inp" style="height:34px;width:auto;display:inline-block" onchange="hodSetAsOf(this.value)"></label>
+      <button class="btn btn-primary btn-sm" onclick="hodOpenNew()">➕ New Action</button>
+      <button class="btn btn-jade btn-sm" onclick="hodExportExcel()">📥 Export Excel</button>
+      <label class="btn btn-outline btn-sm" style="cursor:pointer" title="Import the HOD Open Action Items Tracker .xlsx or a CSV export">📤 Import Excel
+        <input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="hodImportFile(this)"></label>
+    </div>
+  </div>
+
+  <div class="hod-kpis" id="hod-kpis"></div>
+
+  <div class="hod-subtabs" role="tablist">
+    <button class="active" data-hodview="register" onclick="hodView('register')">Action register</button>
+    <button data-hodview="agenda" onclick="hodView('agenda')">Meeting agenda</button>
+    <button data-hodview="score" onclick="hodView('score')">Department scorecard</button>
+  </div>
+
+  <!-- Register -->
+  <div id="hod-v-register">
+    <div class="hod-filters">
+      <input type="search" class="inp hod-q" id="hod-q" placeholder="🔍 Search action, department, officer, ID…" oninput="hodRenderRegister()">
+      <select class="sel" id="hod-f-dep" onchange="hodRenderRegister()"><option value="">All departments</option></select>
+      <select class="sel" id="hod-f-status" onchange="hodRenderRegister()"><option value="active">Open + In progress</option><option value="">Any status</option><option>Open</option><option>In progress</option><option>Done</option><option>Dropped</option></select>
+      <select class="sel" id="hod-f-rag" onchange="hodRenderRegister()"><option value="">Any RAG</option><option value="R">Red</option><option value="A">Amber</option><option value="G">Green</option></select>
+      <select class="sel" id="hod-f-flag" onchange="hodRenderRegister()"><option value="">Any flag</option><option>Chronic</option><option value="Silent - confirm">Silent, confirm</option></select>
+      <select class="sel" id="hod-f-esc" onchange="hodRenderRegister()"><option value="">Any escalation</option><option value="1">L1 · HOD</option><option value="2">L2 · DRO / PA (G)</option><option value="3">L3 · Collector</option></select>
+      <select class="sel" id="hod-f-due" onchange="hodRenderRegister()"><option value="">Any target date</option><option value="overdue">Overdue</option><option value="7">Due in 7 days</option><option value="none">No target date</option></select>
+      <select class="sel" id="hod-f-sort" onchange="hodRenderRegister()"><option value="">Sort: priority</option><option value="age">Sort: oldest first</option><option value="due">Sort: target date</option><option value="times">Sort: most meetings</option><option value="id">Sort: Action ID</option></select>
+      <button class="btn btn-outline btn-sm" onclick="hodClearFilters()">Clear</button>
+      <span class="hod-count" id="hod-count"></span>
+    </div>
+    <div class="hod-table-wrap"><table class="hod-table">
+      <thead><tr><th>ID</th><th>Action item &amp; owner</th><th>Status</th><th>RAG / flag</th><th>Target</th><th>Wks</th></tr></thead>
+      <tbody id="hod-tbody"><tr><td colspan="6" class="hod-empty">Loading HOD action items…</td></tr></tbody>
+    </table></div>
+  </div>
+
+  <!-- Agenda -->
+  <div id="hod-v-agenda" style="display:none">
+    <div class="hod-filters">
+      <select class="sel" id="hod-ag-dep" onchange="hodRenderAgenda()"><option value="">All departments</option></select>
+      <select class="sel" id="hod-ag-rag" onchange="hodRenderAgenda()"><option value="">Any RAG</option><option value="R">Red only</option><option value="A">Amber only</option></select>
+      <select class="sel" id="hod-ag-esc" onchange="hodRenderAgenda()"><option value="">Any escalation</option><option value="23">L2 and L3</option><option value="3">L3 · Collector only</option></select>
+      <label class="hod-note"><input type="checkbox" id="hod-ag-only" checked onchange="hodRenderAgenda()"> Only Chronic, Silent and Overdue</label>
+      <button class="btn btn-secondary btn-sm" onclick="hodCopyAgenda()">📋 Copy agenda text</button>
+    </div>
+    <div class="hod-selbar" id="hod-selbar" style="display:none">
+      <b id="hod-sel-n"></b>
+      <input type="text" class="inp" id="hod-sel-ev" placeholder="ATR / evidence reference for all selected">
+      <button class="btn btn-outline btn-sm" onclick="hodSelMeet()">Closed in meeting</button>
+      <button class="btn btn-outline btn-sm" onclick="hodBulk('rev')">Mark reviewed</button>
+      <button class="btn btn-jade btn-sm" onclick="hodBulk('Done')">✅ Close as Done</button>
+      <button class="btn btn-danger btn-sm" onclick="hodBulk('Dropped')">Drop</button>
+      <button class="btn btn-outline btn-sm" onclick="hodSelClear()">Clear</button>
+    </div>
+    <div id="hod-agenda"></div>
+  </div>
+
+  <!-- Scorecard -->
+  <div id="hod-v-score" style="display:none">
+    <div class="hod-filters">
+      <input type="search" class="inp hod-q" id="hod-lg-q" placeholder="🔍 Find a department" oninput="hodRenderScore()">
+      <select class="sel" id="hod-lg-sort" onchange="hodRenderScore()"><option value="red">Sort: most Red</option><option value="open">Sort: most open</option><option value="oldest">Sort: oldest item</option><option value="name">Sort: name</option></select>
+      <label class="hod-note"><input type="checkbox" id="hod-lg-red" onchange="hodRenderScore()"> Only with Red items</label>
+    </div>
+    <div class="hod-table-wrap"><table class="hod-table" style="min-width:720px">
+      <thead><tr><th>#</th><th>Department</th><th>Open</th><th>Red</th><th>Amber</th><th>Green</th><th>RAG mix</th><th>Oldest (wks)</th><th>Closed</th><th>Follow-up</th></tr></thead>
+      <tbody id="hod-league"></tbody>
+    </table></div>
+    <p class="hod-note" style="margin-top:10px">RAG: <b>Red</b> = overdue or raised in 4+ meetings · <b>Amber</b> = no target date, due within 7 days, or no update for 14 days · <b>Green</b> = on track. Escalation: L1 HOD → L2 DRO / PA (G) when Red → L3 Collector when Red for 8+ meetings or 14+ days overdue.</p>
+  </div>
+</div>
+
+<div class="modal-bg" id="hod-modal-bg" onclick="if(event.target===this)hodCloseModal()">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-head">
+      <div class="modal-title" id="hod-modal-title">Action item</div>
+      <button class="modal-close" onclick="hodCloseModal()">✕</button>
+    </div>
+    <div class="modal-body" id="hod-modal-body"></div>
+  </div>
+</div>
+
 <div id="page-analytics" class="page">
   <div class="sec-head">
     <div class="sec-title">Analytics <span>&amp; Insights</span></div>
@@ -4751,7 +4918,7 @@ function showPage(id, btn) {
   } else {
     const tabs = document.querySelectorAll('.nav-tab');
     // Updated: my-profile is now index 1, form is 2, etc.
-    const tabMap = { dashboard:0, 'my-profile':1, form:2, records:3, coordination:4, map:5, analytics:6, leaderboard:7, officers:8, download:9, sync:10, settings:11 };
+    const tabMap = { dashboard:0, 'my-profile':1, form:2, records:3, coordination:4, 'hod-actions':5, map:6, analytics:7, leaderboard:8, officers:9, download:10, sync:11, settings:12 };
     if (tabMap[id] !== undefined) tabs[tabMap[id]]?.classList.add('active');
   }
 
@@ -4759,6 +4926,7 @@ function showPage(id, btn) {
   if (id === 'records')      renderRecordsTable();
   if (id === 'analytics')    updateAnalytics();
   if (id === 'coordination') renderCoordPage();
+  if (id === 'hod-actions')  { try { window.hodRender && window.hodRender(); } catch(e){} }
   if (id === 'map')          { initLeafletMapPage(); renderTicketBoard(); }
   if (id === 'leaderboard')  updateLeaderboard();
   if (id === 'officers')     renderOfficersPage();
@@ -10848,6 +11016,321 @@ if (window._drainQueue) window._drainQueue();
     <div class="drawer-body" id="drawer-body"></div>
   </div>
 </div>
+
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   HOD REVIEW MEETING — ACTION TRACKER
+   Firestore collection: hodActions (doc id = Action ID, e.g. A-001)
+   Viewing and progress notes: everyone. Status, target dates,
+   closing, dropping, new actions and import: admin only.
+═══════════════════════════════════════════════════════════ */
+(function(){
+const HOD_CACHE='mld_hod_actions';
+const H={items:[],asof:new Date().toISOString().slice(0,10),view:'register',sel:new Set(),open:'',mode:'Done',editing:null};
+try{const c=localStorage.getItem(HOD_CACHE);if(c)H.items=JSON.parse(c)||[]}catch(e){}
+
+const $h=id=>document.getElementById(id);
+const e_=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const dmy=iso=>iso?iso.slice(8,10)+'.'+iso.slice(5,7)+'.'+iso.slice(0,4):'';
+const days=(a,b)=>Math.round((Date.parse(a)-Date.parse(b))/864e5);
+const split=s=>String(s||'').split(/\s*\/\s*/).map(x=>x.trim()).filter(Boolean);
+const admin=()=>typeof isAdmin==='function'&&isAdmin();
+const actor=()=>{try{const o=typeof ofrCurrent==='function'&&ofrCurrent();if(o&&o.name)return o.name}catch(e){}return (typeof getSetting==='function'&&getSetting('name'))||(admin()?'Admin':'Officer')};
+const say=(m,t)=>{if(typeof toast==='function')toast(m,t||'success')};
+
+const active=it=>it.status==='Open'||it.status==='In progress';
+const latest=it=>{const h=it.history||[];return h.length?h[h.length-1]:null};
+const lastTouch=it=>{const l=latest(it);return [it.last,l&&l.d].filter(Boolean).sort().pop()||it.first||H.asof};
+const weeks=it=>it.first?Math.max(0,Math.floor(days(H.asof,it.first)/7)):0;
+const overdue=it=>!!(it.due&&active(it)&&it.due<H.asof);
+function flagOf(it){
+  if(it.status==='Done')return 'Closed';if(it.status==='Dropped')return 'Dropped';
+  if(it.last&&days(H.asof,it.last)>14)return 'Silent - confirm';
+  if((it.times||0)>=4)return 'Chronic';return 'Open';
+}
+function ragOf(it){
+  if(!active(it))return 'C';
+  if(overdue(it)||(it.times||0)>=4)return 'R';
+  if(!it.due||days(it.due,H.asof)<=7||days(H.asof,lastTouch(it))>14)return 'A';
+  return 'G';
+}
+const RAG={R:'Red',A:'Amber',G:'Green',C:'Closed'};
+function escOf(it){
+  if(!active(it))return null;const r=ragOf(it);
+  if(r==='R'&&((it.times||0)>=8||(overdue(it)&&days(H.asof,it.due)>14)))return {lvl:3,who:'Collector'};
+  if(r==='R')return {lvl:2,who:'DRO / PA (G)'};return {lvl:1,who:'HOD'};
+}
+const ragPill=it=>{const r=ragOf(it);return `<span class="hod-rag hod-rag-${r}" title="${RAG[r]}">${r==='C'?'✓':r}</span>`};
+function flagPill(it){
+  const f=flagOf(it);const c={Chronic:'chronic','Silent - confirm':'silent',Closed:'done',Dropped:'dropped'}[f];
+  let s=c?`<span class="hod-pill ${c}">${f==='Silent - confirm'?'Silent, confirm':e_(f)}</span>`:'';
+  if(overdue(it))s+=` <span class="hod-pill overdue">Overdue</span>`;return s;
+}
+const statusPill=s=>`<span class="hod-pill ${{'In progress':'prog',Done:'done',Dropped:'dropped'}[s]||''}">${e_(s)}</span>`;
+const escTag=it=>{const e=escOf(it);return e?`<span class="hod-esc ${e.lvl===3?'l3':''}">L${e.lvl} · ${e.who}</span>`:''};
+function deps(){const s=new Set();H.items.forEach(it=>{split(it.owner).forEach(d=>s.add(d));split(it.support).forEach(d=>s.add(d))});return [...s].sort()}
+const depMatch=(it,d)=>!d||split(it.owner).includes(d)||split(it.support).includes(d);
+
+/* ── Firestore ─────────────────────────────────────────── */
+function fbReady(){const fb=window.__fb;return fb&&fb.ok&&fb.setDoc&&fb.updateDoc}
+async function hodWrite(id,data,merge){
+  if(!fbReady()){say('You are offline. Connect to the internet to save HOD actions.','warn');throw new Error('offline')}
+  const fb=window.__fb,ref=fb.doc(fb.db,'hodActions',id);
+  return merge?fb.updateDoc(ref,data):fb.setDoc(ref,data);
+}
+window.hodOnSnapshot=function(list){
+  H.items=list.filter(x=>x&&x.id);
+  try{localStorage.setItem(HOD_CACHE,JSON.stringify(H.items))}catch(e){}
+  hodBadge();if(document.getElementById('page-hod-actions')?.classList.contains('active'))hodRender();
+};
+function hodBadge(){const b=$h('hod-badge');if(b)b.textContent=H.items.filter(it=>ragOf(it)==='R').length}
+
+/* ── Render ────────────────────────────────────────────── */
+window.hodRender=function(){
+  if(!$h('hod-asof').value)$h('hod-asof').value=H.asof;
+  const opts='<option value="">All departments</option>'+deps().map(d=>`<option>${e_(d)}</option>`).join('');
+  ['hod-f-dep','hod-ag-dep'].forEach(id=>{const s=$h(id),v=s.value;s.innerHTML=opts;s.value=v});
+  hodKpis();hodBadge();
+  if(H.view==='register')hodRenderRegister();if(H.view==='agenda')hodRenderAgenda();if(H.view==='score')hodRenderScore();
+};
+window.hodSetAsOf=v=>{H.asof=v||new Date().toISOString().slice(0,10);hodRender()};
+window.hodView=function(v){H.view=v;['register','agenda','score'].forEach(x=>{$h('hod-v-'+x).style.display=x===v?'':'none'});
+  document.querySelectorAll('[data-hodview]').forEach(b=>b.classList.toggle('active',b.dataset.hodview===v));hodRender()};
+function hodKpis(){
+  const act=H.items.filter(active),red=act.filter(it=>ragOf(it)==='R').length,l3=act.filter(it=>(escOf(it)||{}).lvl===3).length;
+  const noDate=act.filter(it=>!it.due).length,closed=H.items.filter(it=>it.status==='Done').length;
+  const K=[['k-sky','Open actions',act.length,`${H.items.length} in register`,"hodQuick('')"],['k-crimson','🔴 Red',red,'Overdue or 4+ meetings',"hodQuick('R')"],
+    ['k-saffron','⬆️ With Collector (L3)',l3,'Escalated to Collector',"hodQuick('L3')"],['k-gold','📅 No target date',noDate,'Set dates to track on time',"hodQuick('nodate')"],
+    ['k-jade','✅ Closed',closed,H.items.length?Math.round(100*closed/H.items.length)+'% closure rate':'—',"hodQuick('closed')"]];
+  $h('hod-kpis').innerHTML=K.map(([c,l,n,f,on])=>`<div class="kpi ${c}" style="cursor:pointer" onclick="${on}"><div class="kpi-label">${l}</div><div class="kpi-value">${n}</div><div class="kpi-foot">${f}</div></div>`).join('');
+}
+window.hodQuick=function(k){hodClearFilters(true);if(k==='R')$h('hod-f-rag').value='R';if(k==='L3')$h('hod-f-esc').value='3';if(k==='nodate')$h('hod-f-due').value='none';if(k==='closed')$h('hod-f-status').value='Done';hodView('register')};
+window.hodClearFilters=function(silent){['hod-q','hod-f-dep','hod-f-rag','hod-f-flag','hod-f-esc','hod-f-due','hod-f-sort'].forEach(id=>$h(id).value='');$h('hod-f-status').value='active';if(!silent)hodRenderRegister()};
+
+function filtered(){
+  const q=$h('hod-q').value.trim().toLowerCase(),dep=$h('hod-f-dep').value,st=$h('hod-f-status').value,rag=$h('hod-f-rag').value,
+    flag=$h('hod-f-flag').value,esc=$h('hod-f-esc').value,due=$h('hod-f-due').value,sort=$h('hod-f-sort').value;
+  return H.items.filter(it=>{
+    if(st==='active'){if(!active(it))return false}else if(st&&it.status!==st)return false;
+    if(!depMatch(it,dep))return false;if(rag&&ragOf(it)!==rag)return false;if(flag&&flagOf(it)!==flag)return false;
+    if(esc&&String((escOf(it)||{}).lvl)!==esc)return false;
+    if(due==='overdue'&&!overdue(it))return false;if(due==='none'&&it.due)return false;
+    if(due==='7'&&!(it.due&&active(it)&&days(it.due,H.asof)>=0&&days(it.due,H.asof)<=7))return false;
+    if(q){const l=latest(it);if(![it.id,it.owner,it.officer,it.support,it.action,l&&l.t,it.remarks].join(' ').toLowerCase().includes(q))return false}
+    return true;
+  }).sort((a,b)=>{const id=a.id.localeCompare(b.id);const rk=it=>({R:0,A:1,G:2,C:3}[ragOf(it)]);
+    if(sort==='age')return (a.first||'').localeCompare(b.first||'')||id;if(sort==='due')return (a.due||'9999').localeCompare(b.due||'9999')||id;
+    if(sort==='times')return (b.times||0)-(a.times||0)||id;if(sort==='id')return id;
+    return (overdue(b)-overdue(a))||(rk(a)-rk(b))||((b.times||0)-(a.times||0))||id});
+}
+window.hodRenderRegister=function(){
+  const rows=filtered();$h('hod-count').textContent=`${rows.length} of ${H.items.length}`;
+  if(!H.items.length){$h('hod-tbody').innerHTML=`<tr><td colspan="6" class="hod-empty">No HOD action items yet.<br>${admin()?'Use <b>📤 Import Excel</b> to load the HOD Open Action Items Tracker, or <b>➕ New Action</b>.':'An admin can import them from the HOD tracker Excel.'}</td></tr>`;return}
+  if(!rows.length){$h('hod-tbody').innerHTML='<tr><td colspan="6" class="hod-empty">No items match these filters.</td></tr>';return}
+  $h('hod-tbody').innerHTML=rows.map(it=>{const l=latest(it);return `<tr class="hod-${ragOf(it)}" onclick="hodOpen('${e_(it.id)}')">
+    <td class="hod-id">${e_(it.id)}</td>
+    <td><div class="hod-act">${e_(it.action)}</div><div class="hod-sub">${e_(it.owner)}${it.officer?` (${e_(it.officer)})`:''}${it.support?` · with ${e_(it.support)}`:''}</div>${l?`<div class="hod-latest">${e_(l.t)}</div>`:''}${it.visitId?'<div class="hod-sub">📷 Field visit linked</div>':''}</td>
+    <td>${statusPill(it.status)}${escTag(it)}</td><td>${ragPill(it)} ${flagPill(it)}</td>
+    <td class="${overdue(it)?'hod-late':''}">${it.due?dmy(it.due):'<span class="hod-note">No date</span>'}</td><td>${weeks(it)}</td></tr>`}).join('');
+};
+
+/* ── Agenda with quick and bulk close ──────────────────── */
+function agendaGroups(){
+  const only=$h('hod-ag-only').checked,d=$h('hod-ag-dep').value,r=$h('hod-ag-rag').value,e=$h('hod-ag-esc').value;
+  const g=new Map();
+  H.items.filter(it=>active(it)&&(!only||overdue(it)||flagOf(it)!=='Open')&&depMatch(it,d)&&(!r||ragOf(it)===r)&&(!e||e.includes(String((escOf(it)||{}).lvl))))
+    .forEach(it=>{const k=it.owner||'Unassigned';if(!g.has(k))g.set(k,[]);g.get(k).push(it)});
+  const sev=it=>(overdue(it)?0:10)+({R:0,A:1,G:2}[ragOf(it)]||3);
+  return [...g.entries()].map(([k,v])=>[k,v.sort((a,b)=>sev(a)-sev(b)||a.id.localeCompare(b.id))])
+    .sort((a,b)=>b[1].filter(x=>ragOf(x)==='R').length-a[1].filter(x=>ragOf(x)==='R').length||b[1].length-a[1].length);
+}
+window.hodRenderAgenda=function(){
+  const gs=agendaGroups(),ad=admin();
+  $h('hod-agenda').innerHTML=gs.length?gs.map(([d,list])=>`<div class="hod-ag"><div class="hod-ag-head"><span>${e_(d)}</span><span class="hod-note">${list.length} item${list.length>1?'s':''}</span></div>`+
+    list.map(it=>{const l=latest(it),rev=it.last===H.asof,sl=H.sel.has(it.id);return `<div class="hod-ag-row ${sl?'sel':''}">
+      <input type="checkbox" ${sl?'checked':''} ${ad?'':'disabled'} onchange="hodSel('${e_(it.id)}',this.checked)" aria-label="Select ${e_(it.id)}">
+      <span class="hod-id">${e_(it.id)}</span>
+      <span style="min-width:0"><div class="hod-act">${e_(it.action)}</div>${l?`<div class="hod-latest">${e_(l.t)}</div>`:''}<div class="hod-sub">${it.times||0} meetings since ${dmy(it.first)}${it.due?' · target '+dmy(it.due):''}</div></span>
+      <span class="hod-ag-side"><span>${ragPill(it)} ${flagPill(it)}</span>${ad?`<span class="hod-ag-btns">${rev?'<span class="hod-note">Reviewed today</span>':`<button class="btn btn-outline btn-sm" onclick="hodReviewed('${e_(it.id)}')">Reviewed</button>`}<button class="btn btn-jade btn-sm" onclick="hodAsk('${e_(it.id)}','Done')">Done</button><button class="btn btn-danger btn-sm" onclick="hodAsk('${e_(it.id)}','Dropped')">Drop</button></span>`:''}</span>
+      ${H.open===it.id?`<div class="hod-closer"><b>${H.mode==='Done'?'Close':'Drop'} ${e_(it.id)}:</b><input class="inp" id="hod-cev" placeholder="${H.mode==='Done'?'ATR no. or evidence':'Reason for dropping'}"><button class="btn btn-outline btn-sm" onclick="document.getElementById('hod-cev').value=hodMeetText('${H.mode}')">${H.mode==='Done'?'Closed in meeting':'Dropped in meeting'}</button><button class="btn btn-secondary btn-sm" onclick="hodConfirm('${e_(it.id)}')">Confirm</button><button class="btn btn-outline btn-sm" onclick="hodAsk('','')">Cancel</button></div>`:''}
+    </div>`}).join('')+'</div>').join(''):'<div class="hod-empty">Nothing pending under these filters.</div>';
+  const n=[...H.sel].filter(id=>H.items.some(x=>x.id===id&&active(x))).length;
+  $h('hod-selbar').style.display=n?'flex':'none';$h('hod-sel-n').textContent=n+' selected';
+};
+window.hodMeetText=m=>`${m==='Dropped'?'Dropped':'Closure confirmed'} in HOD meeting on ${dmy(H.asof)}`;
+window.hodSel=(id,on)=>{on?H.sel.add(id):H.sel.delete(id);hodRenderAgenda()};
+window.hodSelClear=()=>{H.sel.clear();hodRenderAgenda()};
+window.hodSelMeet=()=>{$h('hod-sel-ev').value=hodMeetText('Done')};
+window.hodAsk=(id,mode)=>{H.open=id;H.mode=mode||'Done';hodRenderAgenda();const i=$h('hod-cev');if(i)i.focus()};
+async function closeOne(it,status,ev){
+  const h=(it.history||[]).slice();h.push({d:H.asof,t:status==='Done'?`Closed. Evidence: ${ev}`:`Dropped. ${ev}`,s:status,by:actor()});
+  const p={status,history:h,updatedAt:new Date().toISOString(),updatedBy:actor()};
+  if(status==='Done')p.evidence=ev;else p.remarks=[it.remarks,ev].filter(Boolean).join(' · ');
+  if(!it.last||H.asof>it.last){p.last=H.asof;p.times=(it.times||0)+1}
+  await hodWrite(it.id,p,true);
+}
+window.hodConfirm=async function(id){
+  if(!admin())return say('🔐 Admin login required','warn');
+  const ev=($h('hod-cev').value||'').trim();if(!ev){$h('hod-cev').focus();return say(H.mode==='Done'?'Add the ATR reference or tap "Closed in meeting"':'Give a reason for dropping','warn')}
+  const it=H.items.find(x=>x.id===id);if(!it)return;
+  try{await closeOne(it,H.mode,ev);H.open='';say(`${id} ${H.mode==='Done'?'closed':'dropped'}`)}catch(e){if(e.message!=='offline')say('Could not save: '+e.message,'error')}
+};
+window.hodReviewed=async function(id){
+  if(!admin())return say('🔐 Admin login required','warn');
+  const it=H.items.find(x=>x.id===id);if(!it||it.last===H.asof)return;
+  const h=(it.history||[]).slice();h.push({d:H.asof,t:'Reviewed in HOD meeting.',s:'',by:actor()});
+  try{await hodWrite(id,{last:H.asof,times:(it.times||0)+1,history:h,updatedAt:new Date().toISOString(),updatedBy:actor()},true);say(`${id} marked as reviewed`)}catch(e){if(e.message!=='offline')say('Could not save: '+e.message,'error')}
+};
+window.hodBulk=async function(kind){
+  if(!admin())return say('🔐 Admin login required','warn');
+  const ids=[...H.sel];if(kind==='rev'){for(const id of ids)await hodReviewed(id);H.sel.clear();return hodRenderAgenda()}
+  const ev=$h('hod-sel-ev').value.trim();if(!ev){$h('hod-sel-ev').focus();return say(kind==='Done'?'Add one ATR reference or tap "Closed in meeting"':'Give a reason for dropping','warn')}
+  let n=0;for(const id of ids){const it=H.items.find(x=>x.id===id);if(!it||!active(it))continue;try{await closeOne(it,kind,ev);n++;H.sel.delete(id)}catch(e){if(e.message==='offline')break}}
+  $h('hod-sel-ev').value='';hodRenderAgenda();say(`${n} item${n===1?'':'s'} ${kind==='Done'?'closed':'dropped'}`);
+};
+window.hodCopyAgenda=function(){
+  let t=`A. Pending from previous meetings (as of ${dmy(H.asof)})\n`;
+  agendaGroups().forEach(([d,list],i)=>{t+=`\n${i+1}. ${d}\n`;list.forEach(it=>{const tags=[RAG[ragOf(it)]],f=flagOf(it),e=escOf(it),l=latest(it);
+    if(f==='Chronic')tags.push(`Chronic, ${it.times} meetings`);if(f==='Silent - confirm')tags.push('Silent, confirm status');if(overdue(it))tags.push('Overdue since '+dmy(it.due));if(e&&e.lvl>1)tags.push(`Escalated L${e.lvl} to ${e.who}`);
+    t+=`   • ${it.id} ${it.action} [${tags.join('; ')}]\n${l?`     Last: ${l.t}\n`:''}`})});
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>say('📋 Agenda copied. Paste it into section A of the minutes.'),()=>say('Copy was blocked by the browser','warn'));
+};
+
+/* ── Scorecard with WhatsApp follow-up ─────────────────── */
+window.hodRenderScore=function(){
+  const m=new Map();
+  H.items.forEach(it=>{const d=split(it.owner)[0]||'Unassigned',e=m.get(d)||{open:0,R:0,A:0,G:0,closed:0,total:0,oldest:0};
+    e.total++;if(active(it)){e.open++;e[ragOf(it)]++;e.oldest=Math.max(e.oldest,weeks(it))}else if(it.status==='Done')e.closed++;m.set(d,e)});
+  const q=$h('hod-lg-q').value.trim().toLowerCase(),s=$h('hod-lg-sort').value,red=$h('hod-lg-red').checked;
+  const S={red:(a,b)=>b[1].R-a[1].R||b[1].oldest-a[1].oldest,open:(a,b)=>b[1].open-a[1].open,oldest:(a,b)=>b[1].oldest-a[1].oldest,name:(a,b)=>a[0].localeCompare(b[0])};
+  const rows=[...m.entries()].filter(([d,e])=>e.open&&(!q||d.toLowerCase().includes(q))&&(!red||e.R)).sort(S[s]||S.red);
+  const col={R:'var(--crimson)',A:'var(--gold)',G:'var(--jade)'};
+  $h('hod-league').innerHTML=rows.length?rows.map(([d,e],i)=>`<tr onclick="hodGoDept('${e_(d).replace(/'/g,"\\'")}')"><td>${i+1}</td><td><b>${e_(d)}</b></td><td>${e.open}</td><td>${e.R||''}</td><td>${e.A||''}</td><td>${e.G||''}</td>
+    <td><span class="hod-mini">${['R','A','G'].filter(k=>e[k]).map(k=>`<span style="flex:${e[k]};background:${col[k]}"></span>`).join('')}</span></td><td>${e.oldest}</td><td>${e.closed}/${e.total}</td>
+    <td><a class="btn btn-jade btn-sm" target="_blank" rel="noopener" onclick="event.stopPropagation()" href="https://wa.me/?text=${encodeURIComponent(hodWaText(d))}">📲 WhatsApp</a></td></tr>`).join('')
+    :'<tr><td colspan="10" class="hod-empty">No departments match.</td></tr>';
+};
+window.hodGoDept=d=>{hodClearFilters(true);$h('hod-f-dep').value=d;hodView('register')};
+function hodWaText(d){
+  const list=H.items.filter(it=>active(it)&&split(it.owner).includes(d));
+  let t=`*HOD Review Meeting: pending action items*\n*To:* ${d}\nAs of ${dmy(H.asof)}\n\n`;
+  t+=list.map((it,i)=>{const l=latest(it),b=[`Status: ${it.status}`,`RAG: ${RAG[ragOf(it)]}`];if(it.due)b.push('Target: '+dmy(it.due)+(overdue(it)?' (overdue)':''));
+    return `${i+1}. *${it.id}* ${it.action}\n   ${b.join(' · ')}${l?`\n   Last noted: ${l.t}`:''}`}).join('\n\n');
+  return t+`\n\nKindly send the ATR with photos for each item before the next HOD meeting.\nஒவ்வொரு பணிக்கும் நடவடிக்கை அறிக்கையை (ATR) புகைப்படங்களுடன் அடுத்த கூட்டத்திற்கு முன் அனுப்பவும்.\n\nPA (G), Collectorate, Mayiladuthurai`;
+}
+
+/* ── Item modal ────────────────────────────────────────── */
+function visitOptions(sel){
+  const recs=((window.APP&&APP.records)||[]).slice(0,200);
+  return '<option value="">No field visit linked</option>'+recs.map(r=>`<option value="${e_(r.id)}" ${r.id===sel?'selected':''}>${e_((r.datetime||r.createdAt||'').slice(0,10))} · ${e_(r.location||r.block||'')} · ${e_(r.officerName||'')} (${e_(r.department||'')})</option>`).join('');
+}
+function visitCard(id){
+  const r=((window.APP&&APP.records)||[]).find(x=>x.id===id);if(!r)return id?`<div class="hod-visit">📷 Linked visit ${e_(id)} (not on this device yet)</div>`:'';
+  const th=(r.thumbs&&r.thumbs[0])||(r.photos&&r.photos[0])||'';
+  return `<div class="hod-visit">${th?`<img src="${e_(th)}" alt="">`:''}<div><b>${e_(r.location||r.block||'Field visit')}</b><br>${e_(r.officerName||'')} · ${e_((r.datetime||r.createdAt||'').slice(0,10))}<br>${r.photoCount||0} photo(s)${r.lat?` · GPS ${e_(r.lat)}, ${e_(r.lng)}`:''}</div></div>`;
+}
+window.hodOpen=function(id){
+  const it=H.items.find(x=>x.id===id);if(!it)return;H.editing=it;const ad=admin(),dis=ad?'':'disabled';
+  $h('hod-modal-title').textContent=`${it.id} · ${it.owner}`;
+  $h('hod-modal-body').innerHTML=`<div class="hod-act" style="font-size:16px;margin-bottom:10px">${e_(it.action)}</div>
+    <div class="hod-facts"><div>First raised<b>${dmy(it.first)}</b></div><div>Last raised<b>${dmy(it.last)}</b></div><div>Meetings<b>${it.times||0}</b></div></div>
+    <div style="margin-bottom:12px">${ragPill(it)} ${flagPill(it)} ${escTag(it).replace('class="hod-esc','style="display:inline" class="hod-esc')} ${it.support?`<span class="hod-note">· Supporting: ${e_(it.support)}</span>`:''}</div>
+    <div class="hod-grid2"><label class="hod-field"><span>Status</span><select class="sel" id="hm-status" ${dis}>${['Open','In progress','Done','Dropped'].map(s=>`<option ${s===it.status?'selected':''}>${s}</option>`).join('')}</select></label>
+    <label class="hod-field"><span>Target date</span><input type="date" class="inp" id="hm-due" value="${e_(it.due)}" ${dis}></label></div>
+    <label class="hod-field"><span>Responsible officer (name, mobile)</span><input class="inp" id="hm-officer" value="${e_(it.officer)}" ${dis}></label>
+    <label class="hod-field"><span>Add progress update ${ad?'':'(any officer can add)'}</span><textarea class="ta-inp" id="hm-note" rows="2" placeholder="e.g. 02.11: 12 of 43 buildings demolished, photos uploaded"></textarea></label>
+    <label class="hod-field"><span>ATR evidence: link a field inspection</span><select class="sel" id="hm-visit" onchange="document.getElementById('hm-visit-card').innerHTML=hodVisitCard(this.value)">${visitOptions(it.visitId)}</select><div id="hm-visit-card">${visitCard(it.visitId)}</div></label>
+    <label class="hod-field"><span>Evidence / ATR reference</span><input class="inp" id="hm-ev" value="${e_(it.evidence)}" placeholder="ATR no., letter no. or link" ${dis}></label>
+    <label class="hod-field"><span>Remarks</span><input class="inp" id="hm-remarks" value="${e_(it.remarks)}" ${dis}></label>
+    <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin:6px 0 18px">${ad&&active(it)?`<button class="btn btn-outline btn-sm" onclick="document.getElementById('hm-status').value='Done';if(!document.getElementById('hm-ev').value)document.getElementById('hm-ev').value=hodMeetText('Done')">Closed in meeting today</button>`:''}<button class="btn btn-outline btn-sm" onclick="hodCloseModal()">Cancel</button><button class="btn btn-primary btn-sm" onclick="hodSave()">💾 Save</button></div>
+    <div class="kpi-label">History</div><ul class="hod-hist">${(it.history||[]).slice().reverse().map(x=>`<li><div class="when">${dmy(x.d)}${x.s?' · '+e_(x.s):''}${x.by?' · '+e_(x.by):''}</div>${e_(x.t)}</li>`).join('')||'<li class="hod-note">No updates yet.</li>'}</ul>`;
+  $h('hod-modal-bg').classList.add('open');
+};
+window.hodVisitCard=visitCard;
+window.hodCloseModal=()=>{$h('hod-modal-bg').classList.remove('open');H.editing=null};
+window.hodSave=async function(){
+  const it=H.editing;if(!it)return;const ad=admin(),p={},note=$h('hm-note').value.trim(),visit=$h('hm-visit').value;
+  if(ad){
+    const st=$h('hm-status').value,due=$h('hm-due').value,off=$h('hm-officer').value.trim(),ev=$h('hm-ev').value.trim(),rm=$h('hm-remarks').value.trim();
+    if(st==='Done'&&!ev&&!visit&&it.status!=='Done')return say('Add the ATR reference or link a field visit before closing','warn');
+    if(st!==it.status)p.status=st;if(due!==(it.due||''))p.due=due;if(off!==(it.officer||''))p.officer=off;if(ev!==(it.evidence||''))p.evidence=ev;if(rm!==(it.remarks||''))p.remarks=rm;
+  }
+  if(visit!==(it.visitId||''))p.visitId=visit;
+  if(note||p.status||p.visitId!==undefined){const h=(it.history||[]).slice();
+    h.push({d:H.asof,t:note||(p.status?`Status changed to ${p.status}.`:'Field visit linked as evidence.'),s:p.status||'',by:actor()});p.history=h}
+  if(!Object.keys(p).length)return hodCloseModal();
+  p.updatedAt=new Date().toISOString();p.updatedBy=actor();
+  try{await hodWrite(it.id,p,true);hodCloseModal();say(`Saved ${it.id}`)}catch(e){if(e.message!=='offline')say('Could not save: '+e.message,'error')}
+};
+window.hodOpenNew=function(){
+  if(!admin())return say('🔐 Admin login required to add HOD actions','warn');
+  H.editing=null;const dl=`<datalist id="hod-dl">${deps().map(d=>`<option value="${e_(d)}">`).join('')}</datalist>`;
+  $h('hod-modal-title').textContent='➕ New HOD action';
+  $h('hod-modal-body').innerHTML=`${dl}<label class="hod-field"><span>Action item</span><textarea class="ta-inp" id="hn-action" rows="2"></textarea></label>
+    <div class="hod-grid2"><label class="hod-field"><span>Owner department</span><input class="inp" id="hn-owner" list="hod-dl"></label><label class="hod-field"><span>Supporting department</span><input class="inp" id="hn-support" list="hod-dl"></label></div>
+    <div class="hod-grid2"><label class="hod-field"><span>Meeting date</span><input type="date" class="inp" id="hn-first" value="${H.asof}"></label><label class="hod-field"><span>Target date (required)</span><input type="date" class="inp" id="hn-due"></label></div>
+    <label class="hod-field"><span>Responsible officer (name, mobile)</span><input class="inp" id="hn-officer"></label>
+    <label class="hod-field"><span>Instruction as recorded in minutes</span><textarea class="ta-inp" id="hn-note" rows="2"></textarea></label>
+    <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-outline btn-sm" onclick="hodCloseModal()">Cancel</button><button class="btn btn-primary btn-sm" onclick="hodSaveNew()">➕ Add action</button></div>`;
+  $h('hod-modal-bg').classList.add('open');
+};
+window.hodSaveNew=async function(){
+  const a=$h('hn-action').value.trim(),o=$h('hn-owner').value.trim(),due=$h('hn-due').value,first=$h('hn-first').value||H.asof;
+  if(!a||!o)return say('Enter the action item and the owner department','warn');if(!due)return say('Set a target date. Every action needs one.','warn');
+  const n=Math.max(0,...H.items.map(i=>parseInt(String(i.id).replace(/\D/g,''),10)||0))+1,id='A-'+String(n).padStart(3,'0');
+  const doc={id,owner:o,support:$h('hn-support').value.trim(),officer:$h('hn-officer').value.trim(),action:a,first,last:first,times:1,due,status:'Open',evidence:'',remarks:'',visitId:'',
+    history:[{d:first,t:$h('hn-note').value.trim()||'Instructed in HOD meeting.',s:'Open',by:actor()}],updatedAt:new Date().toISOString(),updatedBy:actor()};
+  try{await hodWrite(id,doc,false);hodCloseModal();say(`Added ${id}`)}catch(e){if(e.message!=='offline')say('Could not save: '+e.message,'error')}
+};
+
+/* ── Excel import / export ─────────────────────────────── */
+function toISO(v){
+  if(!v)return '';if(v instanceof Date&&!isNaN(v))return new Date(v.getTime()-v.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+  if(typeof v==='number'){const d=new Date(Math.round((v-25569)*864e5));return d.toISOString().slice(0,10)}
+  const s=String(v).trim(),m=s.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})$/);if(m)return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+  return /^\d{4}-\d{2}-\d{2}/.test(s)?s.slice(0,10):'';
+}
+window.hodImportFile=function(input){
+  const f=input.files&&input.files[0];input.value='';if(!f)return;
+  if(!admin())return say('🔐 Admin login required to import','warn');
+  if(typeof XLSX==='undefined')return say('Excel reader not loaded. Check your connection.','error');
+  const rd=new FileReader();rd.onload=async ev=>{
+    try{
+      const wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array',cellDates:true});
+      const ws=wb.Sheets['Open Actions']||wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''});
+      const hi=rows.findIndex(r=>r.some(c=>String(c).trim()==='ID')&&r.some(c=>/action item/i.test(String(c))));
+      if(hi<0)return say('Could not find the ID / Action item header row in this file','error');
+      const hd=rows[hi].map(c=>String(c).trim().toLowerCase()),col=re=>hd.findIndex(h=>re.test(h));
+      const C={id:col(/^id$/),owner:col(/^owner/),support:col(/^supporting/),action:col(/^action item/),first:col(/^first raised/),last:col(/^last raised/),
+        times:col(/^meetings raised/),latest:col(/^latest status/),due:col(/^(due|target) date/),status:col(/^status$/),ev:col(/^evidence/),rm:col(/^remarks/),off:col(/^responsible officer/)};
+      const have=new Set(H.items.map(i=>i.id));let add=0,skip=0;
+      for(const r of rows.slice(hi+1)){
+        const id=String(r[C.id]||'').trim();if(!/^A-\d+/.test(id)||!String(r[C.action]||'').trim())continue;
+        if(have.has(id)){skip++;continue}
+        const g=k=>C[k]>=0?r[C[k]]:'';const st=['Open','In progress','Done','Dropped'].includes(String(g('status')).trim())?String(g('status')).trim():'Open';
+        const last=toISO(g('last'))||toISO(g('first')),lt=String(g('latest')||'').trim();
+        await hodWrite(id,{id,owner:String(g('owner')).trim(),support:String(g('support')||'').trim(),officer:String(g('off')||'').trim(),action:String(g('action')).trim(),
+          first:toISO(g('first')),last,times:parseInt(g('times'),10)||1,due:toISO(g('due')),status:st,evidence:String(g('ev')||'').trim(),remarks:String(g('rm')||'').trim(),visitId:'',
+          history:[{d:last,t:lt||'Raised in HOD meeting.',s:'',by:'Imported from tracker'}],updatedAt:new Date().toISOString(),updatedBy:actor()},false);add++;
+      }
+      say(`📤 Imported ${add} action item${add===1?'':'s'}${skip?`, skipped ${skip} already in the register`:''}`);
+    }catch(e){if(e.message!=='offline')say('Import failed: '+e.message,'error')}
+  };rd.readAsArrayBuffer(f);
+};
+window.hodExportExcel=function(){
+  if(!H.items.length)return say('No HOD actions to export','warn');
+  const hd=['ID','Owner (department)','Supporting dept','Responsible officer','Action item','First raised','Last raised','Meetings raised in','Latest status','Target date','Status','Flag','RAG','Escalation','Overdue','Weeks open','Evidence / ATR','Linked field visit','Remarks'];
+  const rows=H.items.slice().sort((a,b)=>a.id.localeCompare(b.id)).map(it=>{const l=latest(it),e=escOf(it);return [it.id,it.owner,it.support,it.officer||'',it.action,dmy(it.first),dmy(it.last),it.times,l?`${dmy(l.d)}: ${l.t}`:'',dmy(it.due),it.status,flagOf(it),RAG[ragOf(it)],e?`L${e.lvl} ${e.who}`:'',overdue(it)?'Yes':'',weeks(it),it.evidence||'',it.visitId||'',it.remarks||'']});
+  const wb=XLSX.utils.book_new(),ws=XLSX.utils.aoa_to_sheet([hd,...rows]);
+  ws['!cols']=hd.map((h,i)=>({wch:[8,24,18,22,48,11,11,8,48,11,11,14,7,18,7,7,30,16,30][i]}));
+  XLSX.utils.book_append_sheet(wb,ws,'HOD Actions');XLSX.writeFile(wb,`HOD_Action_Items_${dmy(H.asof)}.xlsx`);say('📥 HOD actions exported to Excel');
+};
+
+document.addEventListener('DOMContentLoaded',hodBadge);hodBadge();
+})();
+</script>
 
 </body>
 </html>
